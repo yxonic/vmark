@@ -2,14 +2,16 @@
   "name": "@yxonic/vmark",
   "version": "0.0.1",
   "author": "Yu Yin <yxonic@gmail.com>",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "files": ["lib/"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.cjs.json",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
     "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src",
     "tc": "tsc --noEmit",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "prepublish": "npm run build"
   },
   "dependencies": {
     "markdown-it": "^12.2.0",

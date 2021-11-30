@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "module": "commonjs",
-    "target": "es6",
-    "declaration": true,
-    "lib": ["dom", "esnext"],
-    "outDir": "dist",
-    "strict": true,
+    "outDir": "dist/esm",
+    "module": "es2020",
+    "target": "es2020",
+    "lib": ["dom", "es2020"],
     "esModuleInterop": true,
-    "incremental": false,
-    "skipLibCheck": true,
     "moduleResolution": "node",
+    "strict": true,
     "strictNullChecks": true,
+    "skipLibCheck": true,
     "types": [],
+    "declaration": true,
     "paths": {
       "@/*": ["src/*"]
     }
