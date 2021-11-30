@@ -77,7 +77,7 @@ export class MarkdownVueRenderer {
         } else if (token.type === 'text') {
           fragment.children.push(token.content)
         } else if (token.type === 'softbreak') {
-          // ignore
+          fragment.children.push('\n')
         } else if (token.type === 'html_inline') {
           fragment.children.push(token.content)
         } else {
