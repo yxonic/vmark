@@ -4,7 +4,6 @@
   "author": "Yu Yin <yxonic@gmail.com>",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
-  "types": "dist/cjs/index.d.ts",
   "files": [
     "dist/"
   ],

@@ -1,3 +1,4 @@
+import { h } from 'vue'
 import MarkdownIt from 'markdown-it'
 export class VueRenderer {
   md: MarkdownIt
@@ -9,6 +10,6 @@ export class VueRenderer {
     })
   }
   render(src: string) {
-    return this.md.render(src)
+    return h('div', { innerHTML: this.md.render(src) })
   }
 }

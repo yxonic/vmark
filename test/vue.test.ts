@@ -7,5 +7,5 @@ it('should render markdown as vue component', async () => {
     render: () => h(VMark, { src: '# heading' }),
   })
   const html = await renderToString(app)
-  expect(html).toContain('h1')
+  expect(html).toContain('<h1>')
 })
