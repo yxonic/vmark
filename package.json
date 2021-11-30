@@ -8,7 +8,7 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.cjs.json",
+    "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json",
     "test": "jest",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
     "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src",
@@ -36,6 +36,7 @@
     "jest": "^27.4.0",
     "lint-staged": "^12.1.2",
     "prettier": "^2.4.1",
+    "rimraf": "^3.0.2",
     "ts-jest": "^27.0.7",
     "typescript": "^4.4.4",
     "vite": "^2.6.14"
