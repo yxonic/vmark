@@ -1,4 +1,4 @@
-import { h, VNodeArrayChildren } from 'vue'
+import { h, VNodeArrayChildren } from '@vue/runtime-core'
 
 import MarkdownIt from 'markdown-it'
 // markdown-it plugins

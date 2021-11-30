@@ -1,4 +1,4 @@
-import { defineComponent } from 'vue'
+import { defineComponent } from '@vue/runtime-core'
 import { MarkdownVueRenderer } from './renderer'
 
 export default defineComponent({
