@@ -10,7 +10,6 @@
     "strict": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
-    "types": [],
     "declaration": true,
     "paths": {
       "@/*": ["src/*"]

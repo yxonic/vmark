@@ -11,8 +11,6 @@ export default defineComponent({
   },
   setup(props) {
     const renderer = new VueRenderer()
-    return () => {
-      renderer.render(props.src)
-    }
+    return () => renderer.render(props.src)
   },
 })
