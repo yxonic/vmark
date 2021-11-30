@@ -10,6 +10,5 @@ it('should render markdown as vue component', async () => {
       }),
   })
   const html = await renderToString(app)
-  console.log(html)
   expect(html).toContain('<h1>')
 })

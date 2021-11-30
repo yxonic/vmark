@@ -42,6 +42,7 @@ You can also register VMark as global component. It's up to you.
 - [ ] [markdown-it-custom-block](https://github.com/posva/markdown-it-custom-block)*
 - [ ] [markdown-it-container](https://github.com/markdown-it/markdown-it-container)*
 - [ ] [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists)*
+- [x] [markdown-it-front-matter](https://github.com/ParkSB/markdown-it-front-matter)
 - [ ] [markdown-it-anchor](https://github.com/valeriangalliat/markdown-it-anchor)*
 - [ ] [markdown-it-table-of-contents](https://github.com/cmaas/markdown-it-table-of-contents)
 - [ ] [markdown-it-attrs](https://github.com/arve0/markdown-it-attrs)*

@@ -7,6 +7,7 @@ import Footnote from 'markdown-it-footnote'
 import Abbr from 'markdown-it-abbr'
 import DefList from 'markdown-it-deflist'
 import Container from 'markdown-it-container'
+import FrontMatter from 'markdown-it-front-matter'
 
 import Token from 'markdown-it/lib/token'
 
@@ -35,6 +36,9 @@ export class MarkdownVueRenderer {
     md.use(Abbr)
     md.use(DefList)
     md.use(Container, 'warning')
+    md.use(FrontMatter, (fm) => {
+      console.log(fm)
+    })
     return new MarkdownVueRenderer(md)
   }
 
