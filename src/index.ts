@@ -1,5 +1,5 @@
 import { defineComponent } from 'vue'
-import { VueRenderer } from './renderer'
+import { MarkdownVueRenderer } from './renderer'
 
 export default defineComponent({
   name: 'VMark',
@@ -10,7 +10,7 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const renderer = new VueRenderer()
+    const renderer = MarkdownVueRenderer.fromOptions()
     return () => renderer.render(props.src)
   },
 })

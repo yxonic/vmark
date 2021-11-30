@@ -1,26 +1,55 @@
-# typescript-template
+# VMark
 
-![Supported node versions](https://img.shields.io/node/v/husky)
+Markdown rendering as [Vue 3](https://v3.vuejs.org) component tree, with carefully selected Markdown features, human-friendly rendering options, and custom vue component support. It also provides a Vite plugin for this to happen at server-side.
 
-<img align="right" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Typescript_logo_2020.svg/1200px-Typescript_logo_2020.svg.png" height="120px" alt="typescript logo">
-
-A _minimal_ TypeScript project template for both frontend and backend development.
-
-### Features
-
-* Start a TypeScript project with **best practices**
-* Better **developer experience** with formatting, linting and VSCode extentions
-* A good starting point for both **frontend and backend** development
-
-### Usage
-#### Use Github template
-[Use this template](https://github.com/lem0nle/typescript-template/generate) to create your own repo on Github.
-
-#### Create locally
-Also, you can create a local project with this template.
+## Usage
 
 ```bash
-npx degit lem0nle/typescript-template my-ts-project
-cd my-ts-project
-npm install
+npm i @yxonic/vmark
 ```
+
+Then in your `.vue` file:
+
+```vue
+<template>
+  <v-mark src="# heading">
+</template>
+<script setup>
+import VMark from '@yxonic/vmark'
+</script>
+```
+
+You can also register VMark as global component. It's up to you.
+
+## TODO
+
+- [ ] Support token renderer customization for each type.
+- [ ] A handy collection of `markdown-it` plugins.
+- [ ] Feature-oriented options for `<v-mark>`.
+- [ ] Custom components.
+- [ ] Dynamic options.
+- [ ] Vite plugin.
+- [ ] Export frontmatter and document structure.
+- [ ] Documentation.
+
+## `markdown-it` Plugins
+
+### Community packages
+- [x] [markdown-it-cjk-breaks](https://github.com/markdown-it/markdown-it-cjk-breaks)
+- [ ] [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote)*
+- [x] [markdown-it-abbr](https://github.com/markdown-it/markdown-it-abbr)
+- [x] [markdown-it-deflist](https://github.com/markdown-it/markdown-it-deflist)
+- [ ] [markdown-it-custom-block](https://github.com/posva/markdown-it-custom-block)*
+- [ ] [markdown-it-container](https://github.com/markdown-it/markdown-it-container)*
+- [ ] [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists)*
+- [ ] [markdown-it-anchor](https://github.com/valeriangalliat/markdown-it-anchor)*
+- [ ] [markdown-it-table-of-contents](https://github.com/cmaas/markdown-it-table-of-contents)
+- [ ] [markdown-it-attrs](https://github.com/arve0/markdown-it-attrs)*
+- [ ] [markdown-it-multimd-table](https://github.com/RedBug312/markdown-it-multimd-table)
+
+\* needs special care when rendering
+
+### Manual
+
+- [ ] Link rewrite
+- [ ] KaTeX
