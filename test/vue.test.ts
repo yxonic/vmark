@@ -4,8 +4,12 @@ import { renderToString } from '@vue/server-renderer'
 
 it('should render markdown as vue component', async () => {
   const app = createSSRApp({
-    render: () => h(VMark, { src: '# heading' }),
+    render: () =>
+      h(VMark, {
+        src: '# *heading*\n```ts{1,3}\ntest\nfn\nread\n```\n::: block\n:::',
+      }),
   })
   const html = await renderToString(app)
+  console.log(html)
   expect(html).toContain('<h1>')
 })
