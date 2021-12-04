@@ -16,7 +16,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
     name: 'transform-file',
     transform(_: string, id: string) {
       if (mdRegex.test(id)) {
-        const rawImportScript = `import markdownRaw from '${id}?raw'\nconst markdown = markdownRaw.replace(/\\\\\`/, '\`')`
+        const rawImportScript = `import markdownRaw from '${id}?raw'\nconst markdown = markdownRaw.replace(/\\\\\`/g, '\`')`
 
         const dir =
           (option?.componentDirResolver && option.componentDirResolver(id)) ||

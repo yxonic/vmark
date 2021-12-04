@@ -13,7 +13,7 @@ const app = createApp({
     h(
       'div',
       h(VMark, {
-        src: markdown.replaceAll('\\`', '`'),
+        src: markdown.replace(/\\`/g, '`'),
         options: { containers: ['warning'] },
       }),
     ),
