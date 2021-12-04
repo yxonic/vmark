@@ -71,6 +71,7 @@ export class MarkdownVueRenderer {
         md.use(Container, k)
       })
     }
+
     return renderer
   }
 
@@ -136,7 +137,6 @@ export class MarkdownVueRenderer {
         } else if (token.type === 'html_inline') {
           fragment.children.push(token.content)
         } else if (token.type === 'custom') {
-          console.log(token.info)
           const info = token.info as unknown as { tag: string; arg: string }
           const component = components[info.tag]
           const tag = component || 'span'

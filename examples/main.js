@@ -10,7 +10,13 @@ import { createApp, h } from 'vue'
 const app = createApp({
   render: () => [
     h('div', h(App)),
-    h('div', h(VMark, { src: markdown, options: { containers: ['warning'] } })),
+    h(
+      'div',
+      h(VMark, {
+        src: markdown.replaceAll('\\`', '`'),
+        options: { containers: ['warning'] },
+      }),
+    ),
   ],
 })
 
