@@ -1,5 +1,4 @@
 import * as fs from 'fs'
-import * as path from 'path'
 import { hyphenate } from '@vue/shared'
 
 const mdRegex = /\.md$/
@@ -26,10 +25,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
           .map((f) => `import ${f.slice(0, f.length - 4)} from '${dir}/${f}'`)
           .join('\n')
 
-        const rendererImportScript = `import { MarkdownVueRenderer } from '${path.join(
-          __dirname,
-          'renderer',
-        )}'`
+        const rendererImportScript = `import { MarkdownVueRenderer } from '@yxonic/vmark'`
 
         const optionScript = JSON.stringify({ html: true, ...option })
         const componentOptionScript = `{ ${componentFiles

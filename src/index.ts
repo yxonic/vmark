@@ -1,7 +1,9 @@
 import { defineComponent } from '@vue/runtime-core'
-import { MarkdownVueRenderer } from './renderer'
 import type { PropType } from '@vue/runtime-core'
+import { MarkdownVueRenderer } from './renderer'
 import type { MarkdownVueRendererOptions } from './renderer'
+
+export { MarkdownVueRenderer }
 
 export default defineComponent({
   name: 'VMark',

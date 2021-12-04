@@ -3,10 +3,8 @@ console.log(frontmatter)
 console.log(nodes)
 
 import markdown from './example.md?raw'
-import VMark from '../src'
-
+import VMark from '@yxonic/vmark'
 import { createApp, h } from 'vue'
-
 const app = createApp({
   render: () => [
     h('div', h(App)),

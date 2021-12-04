@@ -1,5 +1,5 @@
 import Vue from '@vitejs/plugin-vue'
-import VMark from './src/vite'
+import VMark from '@yxonic/vmark/vite'
 
 export default {
   define: {

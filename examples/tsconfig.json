@@ -2,8 +2,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "dist/esm",
-    "module": "esnext",
-    "target": "es2021",
+    "module": "es2020",
+    "target": "es2020",
     "lib": ["dom", "es2021"],
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -11,10 +11,7 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "declaration": true,
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "types": ["vite", "./node_modules/@yxonic/vmark/dist/types"]
   },
-  "include": ["src"],
   "exclude": ["dist", "node_modules"]
 }
