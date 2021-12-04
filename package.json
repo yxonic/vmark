@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json",
+    "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json && cp src/types.d.ts dist/",
     "test": "jest",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
     "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src",

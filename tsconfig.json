@@ -4,7 +4,7 @@
     "outDir": "dist/esm",
     "module": "es2020",
     "target": "es2020",
-    "lib": ["dom", "es2020"],
+    "lib": ["dom", "es2021"],
     "esModuleInterop": true,
     "moduleResolution": "node",
     "strict": true,

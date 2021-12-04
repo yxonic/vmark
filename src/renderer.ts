@@ -17,7 +17,7 @@ import * as yaml from 'yaml'
 import { assert } from './utils'
 
 export interface MarkdownVueRendererOptions {
-  html?: false
+  html?: boolean
   base?: string
   blocks?: string[]
   containers?: string[]
@@ -35,7 +35,7 @@ export class MarkdownVueRenderer {
 
   static fromOptions(options?: MarkdownVueRendererOptions) {
     const md = new MarkdownIt({
-      html: options?.html ?? true,
+      html: options?.html ?? false,
       linkify: true,
       typographer: true,
     })
@@ -147,6 +147,15 @@ export class MarkdownVueRenderer {
                 ? { arg: info.arg }
                 : { class: `block-${info.tag}`, 'data-block-arg': info.arg },
             ),
+          )
+        } else if (token.type === 'html_block') {
+          if (token.tag === 'script') {
+            // skip script
+            continue
+          }
+          // TODO: sanitize data urls, etc.
+          fragment.children.push(
+            h(token.tag || 'div', { innerHTML: token.content }),
           )
         } else {
           fragment.children.push(h(token.tag || 'div', token.content))

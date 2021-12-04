@@ -31,6 +31,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
           'renderer',
         )}'`
 
+        const optionScript = JSON.stringify({ html: true, ...option })
         const componentOptionScript = `{ ${componentFiles
           .map(
             (f) =>
@@ -40,7 +41,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
               )}`,
           )
           .join(', ')} }`
-        const rendererScript = `const md = MarkdownVueRenderer.fromOptions({ customComponents: ${componentOptionScript} })`
+        const rendererScript = `const md = MarkdownVueRenderer.fromOptions({ ...${optionScript}, customComponents: ${componentOptionScript} })`
 
         return {
           code: `${rawImportScript}
