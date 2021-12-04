@@ -1,5 +1,5 @@
 ---
-title: Markdown It Demo
+title: VMark Demo
 ---
 
 __Advertisement :)__

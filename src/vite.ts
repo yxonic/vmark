@@ -1,104 +1,57 @@
 import * as fs from 'fs'
-import { VNodeChild, VNodeArrayChildren, isVNode } from '@vue/runtime-core'
-import { capitalize } from '@vue/shared'
-import { MarkdownVueRenderer } from './renderer'
+import * as path from 'path'
+import { hyphenate } from '@vue/shared'
 
 const mdRegex = /\.md$/
-const containerRegex = /container-([a-zA-Z_\-]+)/
 
 type ComponentDirResolver = (id: string) => string
 
 interface VMarkVitePluginOption {
-  componentDir?: string | ComponentDirResolver
+  defaultComponentDir?: string
+  componentDirResolver?: ComponentDirResolver
 }
 
 export default function plugin(option?: VMarkVitePluginOption) {
-  const md = MarkdownVueRenderer.fromOptions()
   return {
     name: 'transform-file',
-    transform(src: string, id: string) {
+    transform(_: string, id: string) {
       if (mdRegex.test(id)) {
+        const rawImportScript = `import markdown from '${id}?raw'`
+
         const dir =
-          option?.componentDir &&
-          (typeof option.componentDir === 'function'
-            ? option.componentDir(id)
-            : option.componentDir)
-        const { nodes, frontmatter } = md.render(src)
-        const { importScript, fragmentScript } = generateFragmentScript(
-          nodes,
-          dir,
-        )
-        const fmScript = `export const frontmatter = ${JSON.stringify(
-          frontmatter,
-        )}`
+          (option?.componentDirResolver && option.componentDirResolver(id)) ||
+          option?.defaultComponentDir
+        const componentFiles = dir === undefined ? [] : fs.readdirSync(dir)
+        const componentImportScript = componentFiles
+          .map((f) => `import ${f.slice(0, f.length - 4)} from '${dir}/${f}'`)
+          .join('\n')
+
+        const rendererImportScript = `import { MarkdownVueRenderer } from '${path.join(
+          __dirname,
+          'renderer',
+        )}'`
+
+        const componentOptionScript = `{ ${componentFiles
+          .map(
+            (f) =>
+              `${hyphenate(f.slice(0, f.length - 4))}: ${f.slice(
+                0,
+                f.length - 4,
+              )}`,
+          )
+          .join(', ')} }`
+        const rendererScript = `const md = MarkdownVueRenderer.fromOptions({ customComponents: ${componentOptionScript} })`
+
         return {
-          code: `${importScript}\n${fragmentScript}\n${fmScript}\nexport default { render() { return fragment } }\n`,
+          code: `${rawImportScript}
+${componentImportScript}
+${rendererImportScript}
+${rendererScript}
+export const { nodes, frontmatter } = md.render(markdown)
+export default { render() { return nodes } }
+`,
         }
       }
     },
   }
-}
-
-function generateFragmentScript(nodes: VNodeArrayChildren, dir?: string) {
-  const componentFiles = dir === undefined ? [] : fs.readdirSync(dir)
-  const [fragment, set] = generateChildren(nodes, componentFiles)
-  return {
-    importScript: `import { h } from '@vue/runtime-core'\n${Array.from(
-      set.values(),
-    ).map((c) => `import ${c} from '${dir}/${c}.vue'`)}`,
-    fragmentScript: `export const fragment = ${fragment}`,
-  }
-}
-
-function generateChildren(
-  nodes: VNodeArrayChildren,
-  componentFiles: string[],
-): [string, Set<string>] {
-  const set = new Set<string>()
-  if (typeof nodes === 'string') {
-    return [JSON.stringify(nodes), set]
-  }
-  return [
-    `[${nodes
-      .map((n) => {
-        const [script, s] = generateNode(n, componentFiles)
-        s.forEach((v) => set.add(v))
-        return script
-      })
-      .join(',')}]`,
-    set,
-  ]
-}
-
-function generateNode(
-  node: VNodeChild,
-  componentFiles: string[],
-): [string, Set<string>] {
-  if (node instanceof Array) {
-    return generateChildren(node, componentFiles)
-  }
-  const set = new Set<string>()
-  if (isVNode(node)) {
-    let tag = `'${node.type.toString()}'`
-    if (node.props?.class) {
-      const componentName = containerRegex.exec(node.props.class)
-      if (componentName) {
-        const t = capitalize(componentName[1])
-        if (componentFiles.includes(`${t}.vue`)) {
-          tag = t
-          set.add(t)
-        }
-      }
-    }
-    const [children, s] = generateChildren(
-      (node.children || []) as never,
-      componentFiles,
-    )
-    s.forEach((v) => set.add(v))
-    return [
-      `h(${tag},${JSON.stringify(node.props)}, { default: () => ${children} })`,
-      set,
-    ]
-  }
-  return [JSON.stringify((node ?? '').toString()), set]
 }

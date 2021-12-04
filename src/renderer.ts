@@ -1,4 +1,4 @@
-import { h, VNodeArrayChildren } from '@vue/runtime-core'
+import { ComponentOptions, h, VNodeArrayChildren } from '@vue/runtime-core'
 
 import MarkdownIt from 'markdown-it'
 // markdown-it plugins
@@ -16,28 +16,37 @@ import { assert } from './utils'
 export interface MarkdownVueRendererOptions {
   html?: false
   base?: string
+  containers?: string[]
+  customComponents?: Record<string, ComponentOptions>
 }
 
 export class MarkdownVueRenderer {
   md: MarkdownIt
+  private options?: MarkdownVueRendererOptions
   private frontmatter?: string
 
   constructor(md: MarkdownIt) {
     this.md = md
   }
 
-  static fromOptions(option?: MarkdownVueRendererOptions) {
+  static fromOptions(options?: MarkdownVueRendererOptions) {
     const md = new MarkdownIt({
-      html: option?.html ?? true,
+      html: options?.html ?? true,
       linkify: true,
       typographer: true,
     })
     const renderer = new MarkdownVueRenderer(md)
+    renderer.options = options
     md.use(CJKBreak)
     md.use(Footnote)
     md.use(Abbr)
     md.use(DefList)
-    md.use(Container, 'warning')
+    Object.keys(options?.customComponents || {}).forEach((k) => {
+      md.use(Container, k)
+    })
+    options?.containers?.forEach((k) => {
+      md.use(Container, k)
+    })
     md.use(FrontMatter, (fm) => {
       renderer.frontmatter = fm
     })
@@ -59,6 +68,7 @@ export class MarkdownVueRenderer {
       children: VNodeArrayChildren
       attrs: [string, string][] | null
     }[] = [{ attrs: [], children: result }]
+    const components = this.options?.customComponents || {}
     for (const token of tokens) {
       if (token.nesting === 1) {
         // nesting level +1
@@ -69,16 +79,21 @@ export class MarkdownVueRenderer {
         assert(fragment !== undefined)
         const { attrs, children } = fragment
         const attr = (attrs && Object.fromEntries(attrs)) ?? {}
+        let tag = token.tag || 'div'
         if (token.type.startsWith('container')) {
           const name = token.type.split('_')[1]
-          if (attr.class) {
-            attr.class += ` container-${name}`
+          if (components[name]) {
+            tag = components[name] as never
           } else {
-            attr.class = `container-${name}`
+            if (attr.class) {
+              attr.class += ` container-${name}`
+            } else {
+              attr.class = `container-${name}`
+            }
           }
         }
         fragments[fragments.length - 1].children.push(
-          h(token.tag || 'div', attr, children),
+          h(tag, attr, { default: () => children }),
         )
       } else {
         // normal node

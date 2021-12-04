@@ -26,10 +26,10 @@ You can also register VMark as global component. It's up to you.
 - [ ] Support token renderer customization for each type.
 - [ ] A handy collection of `markdown-it` plugins.
 - [ ] Feature-oriented options for `<v-mark>`.
-- [ ] Custom components.
+- [x] Custom components.
 - [ ] Dynamic options.
-- [ ] Vite plugin.
-- [ ] Export frontmatter and document structure.
+- [x] Vite plugin.
+- [x] Export frontmatter and document structure.
 - [ ] Documentation.
 
 ## `markdown-it` Plugins
@@ -40,7 +40,7 @@ You can also register VMark as global component. It's up to you.
 - [x] [markdown-it-abbr](https://github.com/markdown-it/markdown-it-abbr)
 - [x] [markdown-it-deflist](https://github.com/markdown-it/markdown-it-deflist)
 - [ ] [markdown-it-custom-block](https://github.com/posva/markdown-it-custom-block)*
-- [ ] [markdown-it-container](https://github.com/markdown-it/markdown-it-container)*
+- [x] [markdown-it-container](https://github.com/markdown-it/markdown-it-container)*
 - [ ] [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists)*
 - [x] [markdown-it-front-matter](https://github.com/ParkSB/markdown-it-front-matter)
 - [ ] [markdown-it-anchor](https://github.com/valeriangalliat/markdown-it-anchor)*

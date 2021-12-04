@@ -9,7 +9,7 @@ export default {
   plugins: [
     Vue(),
     VMark({
-      componentDir: (f) => {
+      componentDirResolver: (f) => {
         return f.slice(0, f.lastIndexOf('/')) + '/components'
       },
     }),
