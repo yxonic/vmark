@@ -20,6 +20,7 @@ export interface MarkdownVueRendererOptions {
 
 export class MarkdownVueRenderer {
   md: MarkdownIt
+  private frontmatter?: string
 
   constructor(md: MarkdownIt) {
     this.md = md
@@ -31,20 +32,25 @@ export class MarkdownVueRenderer {
       linkify: true,
       typographer: true,
     })
+    const renderer = new MarkdownVueRenderer(md)
     md.use(CJKBreak)
     md.use(Footnote)
     md.use(Abbr)
     md.use(DefList)
     md.use(Container, 'warning')
     md.use(FrontMatter, (fm) => {
-      console.log(fm)
+      renderer.frontmatter = fm
     })
-    return new MarkdownVueRenderer(md)
+    return renderer
   }
 
   render(src: string) {
     const tokens = this.md.parse(src, {})
-    return this.renderTokens(tokens)
+    const nodes = this.renderTokens(tokens)
+    return {
+      nodes,
+      frontmatter: this.frontmatter,
+    }
   }
 
   renderTokens(tokens: Token[]) {
@@ -62,8 +68,17 @@ export class MarkdownVueRenderer {
         const fragment = fragments.pop()
         assert(fragment !== undefined)
         const { attrs, children } = fragment
+        const attr = (attrs && Object.fromEntries(attrs)) ?? {}
+        if (token.type.startsWith('container')) {
+          const name = token.type.split('_')[1]
+          if (attr.class) {
+            attr.class += ` container-${name}`
+          } else {
+            attr.class = `container-${name}`
+          }
+        }
         fragments[fragments.length - 1].children.push(
-          h(token.tag || 'div', attrs && Object.fromEntries(attrs), children),
+          h(token.tag || 'div', attr, children),
         )
       } else {
         // normal node

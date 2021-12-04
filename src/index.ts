@@ -11,6 +11,6 @@ export default defineComponent({
   },
   setup(props) {
     const renderer = MarkdownVueRenderer.fromOptions()
-    return () => renderer.render(props.src)
+    return () => renderer.render(props.src).nodes
   },
 })
