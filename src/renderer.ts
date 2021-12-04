@@ -6,16 +6,20 @@ import CJKBreak from 'markdown-it-cjk-breaks'
 import Footnote from 'markdown-it-footnote'
 import Abbr from 'markdown-it-abbr'
 import DefList from 'markdown-it-deflist'
+import CustomBlock from 'markdown-it-custom-block'
 import Container from 'markdown-it-container'
 import FrontMatter from 'markdown-it-front-matter'
 
 import Token from 'markdown-it/lib/token'
+
+import * as yaml from 'yaml'
 
 import { assert } from './utils'
 
 export interface MarkdownVueRendererOptions {
   html?: false
   base?: string
+  blocks?: string[]
   containers?: string[]
   customComponents?: Record<string, ComponentOptions>
 }
@@ -37,19 +41,36 @@ export class MarkdownVueRenderer {
     })
     const renderer = new MarkdownVueRenderer(md)
     renderer.options = options
+
+    // parsing plugins
     md.use(CJKBreak)
     md.use(Footnote)
     md.use(Abbr)
     md.use(DefList)
-    Object.keys(options?.customComponents || {}).forEach((k) => {
-      md.use(Container, k)
-    })
-    options?.containers?.forEach((k) => {
-      md.use(Container, k)
-    })
+
+    // record frontmatter inside renderer
     md.use(FrontMatter, (fm) => {
-      renderer.frontmatter = fm
+      renderer.frontmatter = yaml.parse(fm)
     })
+
+    // custom components
+    if (options?.blocks) {
+      md.use(
+        CustomBlock,
+        Object.fromEntries(options.blocks.map((b) => [b, null])),
+      )
+    } else {
+      md.use(CustomBlock, options?.customComponents || {})
+    }
+    if (options?.containers) {
+      options.containers.forEach((k) => {
+        md.use(Container, k)
+      })
+    } else {
+      Object.keys(options?.customComponents || {}).forEach((k) => {
+        md.use(Container, k)
+      })
+    }
     return renderer
   }
 
@@ -114,6 +135,19 @@ export class MarkdownVueRenderer {
           fragment.children.push('\n')
         } else if (token.type === 'html_inline') {
           fragment.children.push(token.content)
+        } else if (token.type === 'custom') {
+          console.log(token.info)
+          const info = token.info as unknown as { tag: string; arg: string }
+          const component = components[info.tag]
+          const tag = component || 'span'
+          fragment.children.push(
+            h(
+              tag,
+              component
+                ? { arg: info.arg }
+                : { class: `block-${info.tag}`, 'data-block-arg': info.arg },
+            ),
+          )
         } else {
           fragment.children.push(h(token.tag || 'div', token.content))
         }

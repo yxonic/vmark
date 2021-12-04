@@ -1,0 +1,10 @@
+diff --git a/node_modules/markdown-it-custom-block/index.js b/node_modules/markdown-it-custom-block/index.js
+index 5fbb0d6..9518460 100644
+--- a/node_modules/markdown-it-custom-block/index.js
++++ b/node_modules/markdown-it-custom-block/index.js
+@@ -1,4 +1,4 @@
+-const embedRE = /@\[([\w-]+)\]\((.+)\)/im
++const embedRE = /@\[([\w-]+)\]\((.*)\)/im
+ 
+ module.exports = function plugin (md, options) {
+   md.renderer.rules.custom = function tokenizeBlock (tokens, idx) {
