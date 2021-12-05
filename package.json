@@ -15,7 +15,8 @@
     }
   },
   "files": [
-    "dist/"
+    "dist/",
+    "*.d.ts"
   ],
   "scripts": {
     "dev": "vite",
@@ -28,7 +29,7 @@
     "prepare": "husky install",
     "postinstall": "patch-package",
     "prepublishOnly": "npm run test && npm run build && npm run build:defs",
-    "postpublish": "rimraf *.d.ts dist"
+    "postpublish": "rimraf *.d.ts"
   },
   "dependencies": {
     "@vue/runtime-core": "^3.0.0",
