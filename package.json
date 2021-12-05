@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json && cp src/types.d.ts dist/ && echo '{\"type\": \"module\"}' > dist/esm/package.json",
+    "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
     "build:defs": "tsc --declaration --outDir . --emitDeclarationOnly",
     "test": "jest",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
