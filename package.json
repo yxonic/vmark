@@ -1,6 +1,6 @@
 {
   "name": "@yxonic/vmark",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "author": "Yu Yin <yxonic@gmail.com>",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
