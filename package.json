@@ -4,7 +4,6 @@
   "author": "Yu Yin <yxonic@gmail.com>",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/cjs/index.d.ts",
   "exports": {
     ".": {
       "require": "./dist/cjs/index.js",
@@ -21,13 +20,15 @@
   "scripts": {
     "dev": "vite",
     "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json && cp src/types.d.ts dist/ && echo '{\"type\": \"module\"}' > dist/esm/package.json",
+    "build:defs": "tsc --declaration --outDir . --emitDeclarationOnly",
     "test": "jest",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
     "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src",
     "tc": "tsc --noEmit",
     "prepare": "husky install",
     "postinstall": "patch-package",
-    "prepublishOnly": "npm run test && npm run build"
+    "prepublishOnly": "npm run test && npm run build && npm run build:defs",
+    "postpublish": "rimraf *.d.ts dist"
   },
   "dependencies": {
     "@vue/runtime-core": "^3.0.0",
