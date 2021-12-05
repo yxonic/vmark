@@ -11,7 +11,7 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "declaration": true,
-    "types": ["vite", "./node_modules/@yxonic/vmark/dist/types"]
+    "types": ["vite", "@yxonic/vmark/types"]
   },
   "exclude": ["dist", "node_modules"]
 }

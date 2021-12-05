@@ -27,7 +27,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
 
         const rendererImportScript = `import { MarkdownVueRenderer } from '@yxonic/vmark'`
 
-        const optionScript = JSON.stringify({ html: true, ...option })
+        const optionScript = JSON.stringify({ html: false, ...option })
         const componentOptionScript = `{ ${componentFiles
           .map(
             (f) =>
