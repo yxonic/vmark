@@ -92,14 +92,21 @@ export class MarkdownVueRenderer {
     }[] = [{ attrs: [], children: result }]
     const components = this.options?.customComponents || {}
     for (const token of tokens) {
+      const fragment = fragments[fragments.length - 1]
+
       if (token.nesting === 1) {
         // nesting level +1
         fragments.push({ children: [], attrs: token.attrs })
-      } else if (token.nesting === -1) {
+        continue
+      }
+
+      if (token.nesting === -1) {
         // nesting level -1
-        const fragment = fragments.pop()
-        assert(fragment !== undefined)
-        const { attrs, children } = fragment
+        const currentFragment = fragments.pop()
+        const fragment = fragments[fragments.length - 1]
+
+        assert(currentFragment !== undefined)
+        const { attrs, children } = currentFragment
         const attr = (attrs && Object.fromEntries(attrs)) ?? {}
         let tag = token.tag || 'div'
         if (token.type.startsWith('container')) {
@@ -114,49 +121,56 @@ export class MarkdownVueRenderer {
             }
           }
         }
-        fragments[fragments.length - 1].children.push(
-          h(tag, attr, { default: () => children }),
+
+        if (token.hidden) {
+          fragment.children.push(children)
+        } else {
+          fragment.children.push(h(tag, attr, { default: () => children }))
+        }
+        continue
+      }
+
+      // normal node
+      // TODO: switch token type
+      if (token.type === 'inline') {
+        assert(token.children !== null)
+        fragment.children.push(this.renderTokens(token.children))
+      } else if (token.type === 'fence') {
+        fragment.children.push(h('pre', token.content))
+      } else if (token.type === 'image') {
+        const attrs = Object.fromEntries(token.attrs ?? [])
+        if (!attrs.alt) attrs.alt = token.content
+        fragment.children.push(h('img', attrs))
+      } else if (token.type === 'text') {
+        fragment.children.push(token.content)
+      } else if (token.type === 'softbreak') {
+        fragment.children.push('\n')
+      } else if (token.type === 'custom') {
+        const info = token.info as unknown as { tag: string; arg: string }
+        const component = components[info.tag]
+        const tag = component || 'span'
+        fragment.children.push(
+          h(
+            tag,
+            component
+              ? { arg: info.arg }
+              : { class: `block-${info.tag}`, 'data-block-arg': info.arg },
+          ),
+        )
+      } else if (token.type === 'html_inline') {
+        fragment.children.push(token.content)
+      } else if (token.type === 'html_block') {
+        if (token.tag === 'script') {
+          // skip script
+          continue
+        }
+        // TODO: sanitize data urls, etc.
+        fragment.children.push(
+          h(token.tag || 'div', { innerHTML: token.content }),
         )
       } else {
-        // normal node
-        const fragment = fragments[fragments.length - 1]
-        // TODO: switch token type
-        if (token.type === 'inline') {
-          assert(token.children !== null)
-          fragment.children.push(this.renderTokens(token.children))
-        } else if (token.type === 'fence') {
-          fragment.children.push(h('pre', token.content))
-        } else if (token.type === 'image') {
-          const attrs = Object.fromEntries(token.attrs ?? [])
-          if (!attrs.alt) attrs.alt = token.content
-          fragment.children.push(h('img', attrs))
-        } else if (token.type === 'text') {
+        if (token.hidden) {
           fragment.children.push(token.content)
-        } else if (token.type === 'softbreak') {
-          fragment.children.push('\n')
-        } else if (token.type === 'html_inline') {
-          fragment.children.push(token.content)
-        } else if (token.type === 'custom') {
-          const info = token.info as unknown as { tag: string; arg: string }
-          const component = components[info.tag]
-          const tag = component || 'span'
-          fragment.children.push(
-            h(
-              tag,
-              component
-                ? { arg: info.arg }
-                : { class: `block-${info.tag}`, 'data-block-arg': info.arg },
-            ),
-          )
-        } else if (token.type === 'html_block') {
-          if (token.tag === 'script') {
-            // skip script
-            continue
-          }
-          // TODO: sanitize data urls, etc.
-          fragment.children.push(
-            h(token.tag || 'div', { innerHTML: token.content }),
-          )
         } else {
           fragment.children.push(h(token.tag || 'div', token.content))
         }

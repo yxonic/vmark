@@ -21,10 +21,10 @@
   "scripts": {
     "dev": "vite",
     "build": "rimraf dist/ && tsc && tsc -p tsconfig.cjs.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
-    "build:defs": "tsc --declaration --outDir . --emitDeclarationOnly",
+    "build:defs": "tsc --declaration --outDir . --emitDeclarationOnly && cp src/types.d.ts .",
     "test": "jest",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,vue}\"",
-    "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src",
+    "format": "prettier --write \"{src,test}/**/*.{ts,tsx,js,jsx,vue}\"",
+    "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src test",
     "tc": "tsc --noEmit",
     "prepare": "husky install",
     "postinstall": "patch-package",
