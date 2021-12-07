@@ -91,6 +91,7 @@ export class MarkdownVueRenderer {
       attrs: [string, string][] | null
     }[] = [{ attrs: [], children: result }]
     const components = this.options?.customComponents || {}
+
     for (const token of tokens) {
       const fragment = fragments[fragments.length - 1]
 
@@ -123,9 +124,9 @@ export class MarkdownVueRenderer {
         }
 
         if (token.hidden) {
-          fragment.children.push(children)
+          fragment.children = fragment.children.concat(children)
         } else {
-          fragment.children.push(h(tag, attr, { default: () => children }))
+          fragment.children.push(h(tag, attr, children))
         }
         continue
       }
@@ -134,7 +135,9 @@ export class MarkdownVueRenderer {
       // TODO: switch token type
       if (token.type === 'inline') {
         assert(token.children !== null)
-        fragment.children.push(this.renderTokens(token.children))
+        fragment.children = fragment.children.concat(
+          this.renderTokens(token.children),
+        )
       } else if (token.type === 'fence') {
         fragment.children.push(h('pre', token.content))
       } else if (token.type === 'image') {
@@ -170,7 +173,7 @@ export class MarkdownVueRenderer {
         )
       } else {
         if (token.hidden) {
-          fragment.children.push(token.content)
+          continue
         } else {
           fragment.children.push(h(token.tag || 'div', token.content))
         }

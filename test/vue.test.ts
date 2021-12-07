@@ -6,12 +6,13 @@ it('should render markdown as vue component', async () => {
   const app = createSSRApp({
     render: () =>
       h(VMark, {
-        src: '# *heading*\n```ts{1,3}\ntest\nfn\nread\n```\n::: block\n:::',
+        src: '# *heading*\n```ts{1,3}\ntest\nfn\nread\n```\n::: block\n:::\n> somequote\n',
       }),
   })
   const html = await renderToString(app)
   expect(html).toContain('<h1>')
   expect(html).toContain('<pre>')
+  expect(html).toContain('somequote')
 })
 
 it('should render lists', async () => {
