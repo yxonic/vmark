@@ -13,9 +13,9 @@ import CJKBreak from 'markdown-it-cjk-breaks'
 import Footnote from 'markdown-it-footnote'
 import Abbr from 'markdown-it-abbr'
 import DefList from 'markdown-it-deflist'
-import CustomBlock from 'markdown-it-custom-block'
 import Container from 'markdown-it-container'
 import FrontMatter from 'markdown-it-front-matter'
+import CustomBlock from './customBlockPlugin'
 
 // for parsing frontmatter
 import * as yaml from 'yaml'
@@ -26,7 +26,6 @@ import { assert } from './utils'
 export interface MarkdownVueRendererOptions {
   html?: boolean
   base?: string
-  blocks?: string[]
   containers?: string[]
   customComponents?: Record<string, ComponentOptions>
   customRules?: RenderRules
@@ -58,10 +57,10 @@ export const defaultRenderRules: RenderRules = {
     return { tag: 'pre', attrs: {}, children: [token.content] }
   },
   custom(token) {
-    const info = token.info as unknown as { tag: string; arg: string }
+    const info = token.info
     return {
-      tag: `block_${info.tag}`,
-      attrs: { info: info.arg },
+      tag: token.tag,
+      attrs: { info },
       children: [],
     }
   },
@@ -145,14 +144,7 @@ export class MarkdownVueRenderer {
     })
 
     // custom components
-    if (options?.blocks) {
-      md.use(
-        CustomBlock,
-        Object.fromEntries(options.blocks.map((b) => [b, null])),
-      )
-    } else {
-      md.use(CustomBlock, options?.customComponents || {})
-    }
+    md.use(CustomBlock)
     if (options?.containers) {
       options.containers.forEach((k) => {
         md.use(Container, k)
