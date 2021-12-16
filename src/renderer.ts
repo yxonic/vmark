@@ -72,13 +72,27 @@ export const defaultRenderRules: RenderRules = {
 export function defaultNodeRenderer(node: Node) {
   const { tag, attrs, children } = node
   if (!tag) return children
-  return createVNode(
-    tag,
-    attrs,
-    // unwrap unnecessary fragments
-    children.length === 1 ? children[0] : children,
-  )
+  return createVNode(tag, attrs, children)
 }
+
+const htmlTagRegex = /^\s*<\/?([a-zA-Z]+)([^>]*)>\s*$/
+// http://xahlee.info/js/html5_non-closing_tag.html
+const selfClosingTags = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+])
 
 export class MarkdownVueRenderer {
   md: MarkdownIt
@@ -169,11 +183,47 @@ export class MarkdownVueRenderer {
     const nodeStack: Node[] = [{ tag: 'div', attrs: {}, children: result }]
 
     for (const token of tokens) {
+      let nesting = token.nesting
+
       if (token.type === 'html_block' || token.type === 'html_inline') {
-        // TODO
+        const matches = htmlTagRegex.exec(token.content)
+        if (matches) {
+          if (token.content.startsWith('</')) {
+            // closing tag
+            if (nodeStack[nodeStack.length - 1].tag !== matches[1]) {
+              // ignore mismatched closing tag
+              continue
+            }
+            nesting = -1
+          } else {
+            // opening tag
+            const el = parse(token.content)
+            assert(el.childNodes.length === 1)
+            const node = el.firstChild as HTMLElement
+            if (
+              token.content.trimEnd().endsWith('/>') ||
+              selfClosingTags.has(node.rawTagName)
+            ) {
+              // self-closing
+              nodeStack[nodeStack.length - 1].children.push(
+                this.nodeRenderer({
+                  tag: node.rawTagName,
+                  attrs: node.attributes,
+                  children: [],
+                }),
+              )
+            } else {
+              nodeStack.push({
+                tag: node.rawTagName,
+                attrs: node.attributes,
+                children: [],
+              })
+            }
+            continue
+          }
+        }
       }
 
-      const nesting = token.nesting
       if (nesting === 1) {
         // nesting level +1
         let tag = token.tag || 'div'
@@ -196,7 +246,7 @@ export class MarkdownVueRenderer {
 
         if (token.hidden) {
           // element is hidden, push a fragment
-          parent.children.push(currentNode.children)
+          parent.children = parent.children.concat(currentNode.children)
         } else {
           // push a new vnode
           parent.children.push(this.nodeRenderer(currentNode))
@@ -205,21 +255,23 @@ export class MarkdownVueRenderer {
       }
 
       // normal node
-      const children = nodeStack[nodeStack.length - 1].children
+      const parent = nodeStack[nodeStack.length - 1]
       if (token.type === 'inline') {
         assert(token.children !== null)
         // render inline tokens as fragment
-        children.push(this.renderTokens(token.children))
+        parent.children = parent.children.concat(
+          this.renderTokens(token.children),
+        )
       } else if (token.hidden) {
         // TODO: make sure this is appropriate
-        children.push(token.content)
+        parent.children.push(token.content)
       } else if (token.type === 'html_block') {
         // parse and render as-is, *before* applying custom rules
         const el = parse(token.content)
         el.childNodes.forEach((n) => {
           if (n.nodeType === NodeType.TEXT_NODE) {
             const node = n as TextNode
-            children.push(node.text)
+            parent.children.push(node.text)
             return
           }
           if (n.nodeType === NodeType.COMMENT_NODE) {
@@ -227,7 +279,7 @@ export class MarkdownVueRenderer {
             return
           }
           const node = n as HTMLElement
-          children.push(
+          parent.children.push(
             this.nodeRenderer({
               tag: node.rawTagName,
               attrs: { ...node.attributes, innerHTML: node.innerHTML },
@@ -241,15 +293,15 @@ export class MarkdownVueRenderer {
           continue
         }
         if (typeof node === 'string') {
-          children.push(node)
+          parent.children.push(node)
           continue
         }
-        children.push(this.nodeRenderer(node))
+        parent.children.push(this.nodeRenderer(node))
       } else if (!token.tag) {
-        children.push(token.content)
+        parent.children.push(token.content)
         continue
       } else {
-        children.push(
+        parent.children.push(
           this.nodeRenderer({
             tag: token.tag,
             attrs: {},

@@ -83,4 +83,27 @@ it('should render raw html tags', async () => {
   })
   html = await renderToString(app)
   expect(html).toContain('<h1>heading</h1>\n<div></div>')
+
+  app = createSSRApp({
+    render: () =>
+      h(VMark, {
+        src: '<div class="border">\n\n# heading\n\n</div>',
+        options: { html: true },
+      }),
+  })
+  html = await renderToString(app)
+  expect(html).toContain('<div class="border"><h1>heading</h1></div>')
+
+  app = createSSRApp({
+    render: () =>
+      h(VMark, {
+        src: 'inline <span style="color: red">red</span> text with <br> and <br />',
+        options: { html: true },
+      }),
+  })
+  html = await renderToString(app)
+  expect(html).toContain(
+    // slash omitted for self-closing tags
+    '<p>inline <span style="color: red">red</span> text with <br> and <br></p>',
+  )
 })
