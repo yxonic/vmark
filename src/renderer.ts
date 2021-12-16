@@ -20,6 +20,9 @@ import CustomBlock from './customBlockPlugin'
 // for parsing frontmatter
 import * as yaml from 'yaml'
 
+// for processing raw html
+import { parse, HTMLElement, TextNode, NodeType } from 'node-html-parser'
+
 // utilities
 import { assert } from './utils'
 
@@ -61,13 +64,6 @@ export const defaultRenderRules: RenderRules = {
     return {
       tag: token.tag,
       attrs: { info },
-      children: [],
-    }
-  },
-  html_block(token) {
-    return {
-      tag: token.tag || 'div',
-      attrs: { innerHTML: token.content },
       children: [],
     }
   },
@@ -173,8 +169,11 @@ export class MarkdownVueRenderer {
     const nodeStack: Node[] = [{ tag: 'div', attrs: {}, children: result }]
 
     for (const token of tokens) {
-      const nesting = getTokenNesting(token)
+      if (token.type === 'html_block' || token.type === 'html_inline') {
+        // TODO
+      }
 
+      const nesting = token.nesting
       if (nesting === 1) {
         // nesting level +1
         let tag = token.tag || 'div'
@@ -214,6 +213,28 @@ export class MarkdownVueRenderer {
       } else if (token.hidden) {
         // TODO: make sure this is appropriate
         children.push(token.content)
+      } else if (token.type === 'html_block') {
+        // parse and render as-is, *before* applying custom rules
+        const el = parse(token.content)
+        el.childNodes.forEach((n) => {
+          if (n.nodeType === NodeType.TEXT_NODE) {
+            const node = n as TextNode
+            children.push(node.text)
+            return
+          }
+          if (n.nodeType === NodeType.COMMENT_NODE) {
+            // ignore comments
+            return
+          }
+          const node = n as HTMLElement
+          children.push(
+            this.nodeRenderer({
+              tag: node.rawTagName,
+              attrs: { ...node.attributes, innerHTML: node.innerHTML },
+              children: [],
+            }),
+          )
+        })
       } else if (this.rules[token.type]) {
         const node = this.rules[token.type](token)
         if (node === null) {
@@ -239,11 +260,4 @@ export class MarkdownVueRenderer {
     }
     return result
   }
-}
-
-function getTokenNesting(token: Token): 0 | 1 | -1 {
-  if (token.type === 'html_inline') {
-    // TODO
-  }
-  return token.nesting
 }

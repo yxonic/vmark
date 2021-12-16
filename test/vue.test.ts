@@ -55,10 +55,32 @@ it('should render raw html tags', async () => {
   app = createSSRApp({
     render: () =>
       h(VMark, {
-        src: '<div>test</div>',
+        src: '<div class="test-class">test</div>',
         options: { html: true },
       }),
   })
   html = await renderToString(app)
-  expect(html).toContain('<div>test</div>')
+  expect(html).toContain('<div class="test-class">test</div>')
+
+  app = createSSRApp({
+    render: () =>
+      h(VMark, {
+        src: '<div class="test-class">div</div>*test* &amp;<span>span</span>',
+        options: { html: true },
+      }),
+  })
+  html = await renderToString(app)
+  expect(html).toContain(
+    '<div class="test-class">div</div>*test* &amp;<span>span</span>',
+  )
+
+  app = createSSRApp({
+    render: () =>
+      h(VMark, {
+        src: '# heading\n\n<!--comment test-->\n\n<div><!--comment test--></div>',
+        options: { html: true },
+      }),
+  })
+  html = await renderToString(app)
+  expect(html).toContain('<h1>heading</h1>\n<div></div>')
 })
