@@ -1,7 +1,14 @@
-import { ComponentOptions, h, VNodeArrayChildren } from '@vue/runtime-core'
+// for vue vnode
+import {
+  createVNode,
+  ComponentOptions,
+  VNodeChild,
+  VNodeArrayChildren,
+} from '@vue/runtime-core'
 
+// markdown-it and plugins
 import MarkdownIt from 'markdown-it'
-// markdown-it plugins
+import Token from 'markdown-it/lib/token'
 import CJKBreak from 'markdown-it-cjk-breaks'
 import Footnote from 'markdown-it-footnote'
 import Abbr from 'markdown-it-abbr'
@@ -10,10 +17,10 @@ import CustomBlock from 'markdown-it-custom-block'
 import Container from 'markdown-it-container'
 import FrontMatter from 'markdown-it-front-matter'
 
-import Token from 'markdown-it/lib/token'
-
+// for parsing frontmatter
 import * as yaml from 'yaml'
 
+// utilities
 import { assert } from './utils'
 
 export interface MarkdownVueRendererOptions {
@@ -22,15 +29,72 @@ export interface MarkdownVueRendererOptions {
   blocks?: string[]
   containers?: string[]
   customComponents?: Record<string, ComponentOptions>
+  customRules?: RenderRules
+  nodeRenderer?: NodeRenderer
+}
+
+export interface Node {
+  tag: string | null
+  attrs: Record<string, string>
+  children: VNodeArrayChildren
+}
+export type TokenRenderRule = (token: Token) => Node | string | null
+export type RenderRules = Record<string, TokenRenderRule>
+export type NodeRenderer = (node: Node) => VNodeChild
+
+export const defaultRenderRules: RenderRules = {
+  text(token) {
+    return token.content
+  },
+  softbreak() {
+    return '\n'
+  },
+  image(token) {
+    const attrs = Object.fromEntries(token.attrs ?? [])
+    if (!attrs.alt) attrs.alt = token.content
+    return { tag: 'img', attrs, children: [] }
+  },
+  fence(token) {
+    return { tag: 'pre', attrs: {}, children: [token.content] }
+  },
+  custom(token) {
+    const info = token.info as unknown as { tag: string; arg: string }
+    return {
+      tag: `block_${info.tag}`,
+      attrs: { info: info.arg },
+      children: [],
+    }
+  },
+  html_block(token) {
+    return {
+      tag: token.tag || 'div',
+      attrs: { innerHTML: token.content },
+      children: [],
+    }
+  },
+}
+
+export function defaultNodeRenderer(node: Node) {
+  const { tag, attrs, children } = node
+  if (!tag) return children
+  return createVNode(
+    tag,
+    attrs,
+    // unwrap unnecessary fragments
+    children.length === 1 ? children[0] : children,
+  )
 }
 
 export class MarkdownVueRenderer {
   md: MarkdownIt
-  private options?: MarkdownVueRendererOptions
+  private rules: RenderRules
+  private nodeRenderer: NodeRenderer
   private frontmatter?: string
 
   constructor(md: MarkdownIt) {
     this.md = md
+    this.rules = Object.assign({}, defaultRenderRules)
+    this.nodeRenderer = defaultNodeRenderer
   }
 
   static fromOptions(options?: MarkdownVueRendererOptions) {
@@ -40,7 +104,34 @@ export class MarkdownVueRenderer {
       typographer: true,
     })
     const renderer = new MarkdownVueRenderer(md)
-    renderer.options = options
+
+    Object.assign(renderer.rules, options?.customRules)
+
+    if (options?.nodeRenderer) {
+      renderer.nodeRenderer = options.nodeRenderer
+    } else {
+      const components = options?.customComponents || {}
+      renderer.nodeRenderer = (node) => {
+        let tag = node.tag
+        const { attrs, children } = node
+        if (
+          typeof tag === 'string' &&
+          (tag.startsWith('block') || tag.startsWith('container'))
+        ) {
+          const name = tag.split('_')[1]
+          if (components[name]) {
+            tag = components[name] as never // simplify typing
+          } else {
+            tag = tag.startsWith('block') ? 'span' : 'div'
+            if (attrs.info) {
+              attrs['data-info'] = attrs.info
+              delete attrs.info
+            }
+          }
+        }
+        return defaultNodeRenderer({ tag, attrs, children })
+      }
+    }
 
     // parsing plugins
     md.use(CJKBreak)
@@ -84,101 +175,83 @@ export class MarkdownVueRenderer {
     }
   }
 
-  renderTokens(tokens: Token[]) {
+  private renderTokens(tokens: Token[]): VNodeArrayChildren {
     const result: VNodeArrayChildren = []
-    const fragments: {
-      children: VNodeArrayChildren
-      attrs: [string, string][] | null
-    }[] = [{ attrs: [], children: result }]
-    const components = this.options?.customComponents || {}
+
+    const nodeStack: Node[] = [{ tag: 'div', attrs: {}, children: result }]
 
     for (const token of tokens) {
-      const fragment = fragments[fragments.length - 1]
+      const nesting = getTokenNesting(token)
 
-      if (token.nesting === 1) {
+      if (nesting === 1) {
         // nesting level +1
-        fragments.push({ children: [], attrs: token.attrs })
+        let tag = token.tag || 'div'
+        const attrs = (token.attrs && Object.fromEntries(token.attrs)) ?? {}
+        if (token.type.startsWith('container')) {
+          tag = token.type
+          attrs.info = token.info as string
+        }
+        nodeStack.push({ tag, attrs, children: [] })
         continue
       }
 
-      if (token.nesting === -1) {
+      if (nesting === -1) {
         // nesting level -1
-        const currentFragment = fragments.pop()
-        const fragment = fragments[fragments.length - 1]
+        const currentNode = nodeStack.pop()
+        assert(currentNode !== undefined)
+        assert(nodeStack.length > 0)
 
-        assert(currentFragment !== undefined)
-        const { attrs, children } = currentFragment
-        const attr = (attrs && Object.fromEntries(attrs)) ?? {}
-        let tag = token.tag || 'div'
-        if (token.type.startsWith('container')) {
-          const name = token.type.split('_')[1]
-          if (components[name]) {
-            tag = components[name] as never
-          } else {
-            if (attr.class) {
-              attr.class += ` container-${name}`
-            } else {
-              attr.class = `container-${name}`
-            }
-          }
-        }
+        const parent = nodeStack[nodeStack.length - 1]
 
         if (token.hidden) {
-          fragment.children = fragment.children.concat(children)
+          // element is hidden, push a fragment
+          parent.children.push(currentNode.children)
         } else {
-          fragment.children.push(h(tag, attr, children))
+          // push a new vnode
+          parent.children.push(this.nodeRenderer(currentNode))
         }
         continue
       }
 
       // normal node
-      // TODO: switch token type
+      const children = nodeStack[nodeStack.length - 1].children
       if (token.type === 'inline') {
         assert(token.children !== null)
-        fragment.children = fragment.children.concat(
-          this.renderTokens(token.children),
-        )
-      } else if (token.type === 'fence') {
-        fragment.children.push(h('pre', token.content))
-      } else if (token.type === 'image') {
-        const attrs = Object.fromEntries(token.attrs ?? [])
-        if (!attrs.alt) attrs.alt = token.content
-        fragment.children.push(h('img', attrs))
-      } else if (token.type === 'text') {
-        fragment.children.push(token.content)
-      } else if (token.type === 'softbreak') {
-        fragment.children.push('\n')
-      } else if (token.type === 'custom') {
-        const info = token.info as unknown as { tag: string; arg: string }
-        const component = components[info.tag]
-        const tag = component || 'span'
-        fragment.children.push(
-          h(
-            tag,
-            component
-              ? { arg: info.arg }
-              : { class: `block-${info.tag}`, 'data-block-arg': info.arg },
-          ),
-        )
-      } else if (token.type === 'html_inline') {
-        fragment.children.push(token.content)
-      } else if (token.type === 'html_block') {
-        if (token.tag === 'script') {
-          // skip script
+        // render inline tokens as fragment
+        children.push(this.renderTokens(token.children))
+      } else if (token.hidden) {
+        // TODO: make sure this is appropriate
+        children.push(token.content)
+      } else if (this.rules[token.type]) {
+        const node = this.rules[token.type](token)
+        if (node === null) {
           continue
         }
-        // TODO: sanitize data urls, etc.
-        fragment.children.push(
-          h(token.tag || 'div', { innerHTML: token.content }),
-        )
+        if (typeof node === 'string') {
+          children.push(node)
+          continue
+        }
+        children.push(this.nodeRenderer(node))
+      } else if (!token.tag) {
+        children.push(token.content)
+        continue
       } else {
-        if (token.hidden) {
-          continue
-        } else {
-          fragment.children.push(h(token.tag || 'div', token.content))
-        }
+        children.push(
+          this.nodeRenderer({
+            tag: token.tag,
+            attrs: {},
+            children: [token.content],
+          }),
+        )
       }
     }
     return result
   }
+}
+
+function getTokenNesting(token: Token): 0 | 1 | -1 {
+  if (token.type === 'html_inline') {
+    // TODO
+  }
+  return token.nesting
 }
