@@ -55,6 +55,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
             attrs.href = base + attrs.href.slice(1)
           }
 
+          let attrSrc = ''
           if (tag === 'img' && attrs.src) {
             const hash = crypto
               .createHash('md5')
@@ -63,6 +64,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
             const src = `Image${hash}`
             dynamicImportScripts.add(`import ${src} from '${attrs.src}'`)
             attrs.src = src
+            attrSrc = `, src: ${src}`
           }
 
           if (tag.startsWith('block_') || tag.startsWith('container_')) {
@@ -87,7 +89,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
                 `import ${name} from '${dir}/${filename}.vue'`,
               )
             } else {
-              tag = type === 'block' ? 'span' : 'div'
+              tag = type === 'block' ? '"span"' : '"div"'
               if (attrs.class) {
                 attrs.class = `${attrs.class} ${type}-${name}`
               } else {
@@ -98,11 +100,13 @@ export default function plugin(option?: VMarkVitePluginOption) {
                 delete attrs.info
               }
             }
+          } else {
+            tag = `"${tag}"`
           }
 
-          return `h(\n'${tag}',\n${JSON.stringify(attrs)},\n[\n${children.join(
-            ',\n',
-          )},\n])`
+          return `h(\n${tag},\n{ ...${JSON.stringify(
+            attrs,
+          )}${attrSrc} },\n[\n${children.join(',\n')},\n])`
         },
       })
       const { nodes, frontmatter } = md.render(src)
