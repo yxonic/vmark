@@ -25,19 +25,19 @@ it('should render custom blocks and containers', async () => {
       }),
   })
   html = await renderToString(app)
-  expect(html).toContain('<span data-info="test">')
+  expect(html).toContain('<span class="block-video" data-info="test">')
 
   app = createSSRApp({
     render: () =>
       h(VMark, {
-        src: ':::block {args}\ntest\n:::',
+        src: ':::note {args}\ntest\n:::',
         options: {
-          containers: ['block'],
+          containers: ['note'],
         },
       }),
   })
   html = await renderToString(app)
-  expect(html).toContain('<div data-info="block {args}">')
+  expect(html).toContain('<div class="container-note" data-info="note {args}">')
 })
 
 it('should render raw html tags', async () => {

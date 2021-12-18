@@ -1,6 +1,6 @@
 // for vue vnode
 import {
-  createVNode,
+  h,
   ComponentOptions,
   VNodeChild,
   VNodeArrayChildren,
@@ -42,7 +42,7 @@ export interface Node {
 }
 export type TokenRenderRule = (token: Token) => Node | string | null
 export type RenderRules = Record<string, TokenRenderRule>
-export type NodeRenderer = (node: Node) => VNodeChild
+export type NodeRenderer = (node: Node | string) => VNodeChild
 
 export const defaultRenderRules: RenderRules = {
   text(token) {
@@ -69,10 +69,11 @@ export const defaultRenderRules: RenderRules = {
   },
 }
 
-export function defaultNodeRenderer(node: Node) {
+export function defaultNodeRenderer(node: Node | string) {
+  if (typeof node === 'string') return node
   const { tag, attrs, children } = node
   if (!tag) return children
-  return createVNode(tag, attrs, children)
+  return h(tag, attrs, children)
 }
 
 const htmlTagRegex = /^\s*<\/?([a-zA-Z]+)([^>]*)>\s*$/
@@ -121,24 +122,32 @@ export class MarkdownVueRenderer {
     } else {
       const components = options?.customComponents || {}
       renderer.nodeRenderer = (node) => {
+        if (typeof node === 'string') return node
         let tag = node.tag
         const { attrs, children } = node
-        if (
-          typeof tag === 'string' &&
-          (tag.startsWith('block') || tag.startsWith('container'))
-        ) {
-          const name = tag.split('_')[1]
+        if (!tag) {
+          return children
+        }
+        if (tag.startsWith('block') || tag.startsWith('container')) {
+          const fields = tag.split('_')
+          const type = fields[0]
+          const name = fields[1]
           if (components[name]) {
             tag = components[name] as never // simplify typing
           } else {
-            tag = tag.startsWith('block') ? 'span' : 'div'
+            tag = type === 'block' ? 'span' : 'div'
+            if (attrs.class) {
+              attrs.class = `${attrs.class} ${type}-${name}`
+            } else {
+              attrs.class = `${type}-${name}`
+            }
             if (attrs.info) {
               attrs['data-info'] = attrs.info
               delete attrs.info
             }
           }
         }
-        return defaultNodeRenderer({ tag, attrs, children })
+        return h(tag, attrs, children)
       }
     }
 
@@ -264,14 +273,14 @@ export class MarkdownVueRenderer {
         )
       } else if (token.hidden) {
         // TODO: make sure this is appropriate
-        parent.children.push(token.content)
+        parent.children.push(this.nodeRenderer(token.content))
       } else if (token.type === 'html_block') {
         // parse and render as-is, *before* applying custom rules
         const el = parse(token.content)
         el.childNodes.forEach((n) => {
           if (n.nodeType === NodeType.TEXT_NODE) {
             const node = n as TextNode
-            parent.children.push(node.text)
+            parent.children.push(this.nodeRenderer(node.text))
             return
           }
           if (n.nodeType === NodeType.COMMENT_NODE) {
@@ -292,13 +301,9 @@ export class MarkdownVueRenderer {
         if (node === null) {
           continue
         }
-        if (typeof node === 'string') {
-          parent.children.push(node)
-          continue
-        }
         parent.children.push(this.nodeRenderer(node))
       } else if (!token.tag) {
-        parent.children.push(token.content)
+        parent.children.push(this.nodeRenderer(token.content))
         continue
       } else {
         parent.children.push(
