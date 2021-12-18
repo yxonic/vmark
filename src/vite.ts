@@ -35,7 +35,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
           let tag = node.tag
           const { attrs, children } = node
 
-          if (tag === null) {
+          if (!tag) {
             return `[\n${children.join(',\n')},\n]`
           }
 

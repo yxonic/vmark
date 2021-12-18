@@ -40,7 +40,10 @@ export interface Node {
   attrs: Record<string, string>
   children: VNodeArrayChildren
 }
-export type TokenRenderRule = (token: Token) => Node | string | null
+export type TokenRenderRule = (
+  token: Token,
+  ctx: { nodeRenderer: NodeRenderer },
+) => Node | string | null
 export type RenderRules = Record<string, TokenRenderRule>
 export type NodeRenderer = (node: Node | string) => VNodeChild
 
@@ -56,8 +59,12 @@ export const defaultRenderRules: RenderRules = {
     if (!attrs.alt) attrs.alt = token.content
     return { tag: 'img', attrs, children: [] }
   },
-  fence(token) {
-    return { tag: 'pre', attrs: {}, children: [token.content] }
+  fence(token, ctx) {
+    return {
+      tag: 'pre',
+      attrs: {},
+      children: [ctx.nodeRenderer(token.content)],
+    }
   },
   custom(token) {
     const info = token.info
@@ -297,7 +304,9 @@ export class MarkdownVueRenderer {
           )
         })
       } else if (this.rules[token.type]) {
-        const node = this.rules[token.type](token)
+        const node = this.rules[token.type](token, {
+          nodeRenderer: this.nodeRenderer,
+        })
         if (node === null) {
           continue
         }
@@ -310,7 +319,7 @@ export class MarkdownVueRenderer {
           this.nodeRenderer({
             tag: token.tag,
             attrs: {},
-            children: [token.content],
+            children: [this.nodeRenderer(token.content)],
           }),
         )
       }
