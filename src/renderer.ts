@@ -154,6 +154,7 @@ export class MarkdownVueRenderer {
             }
           }
         }
+        if (children.length === 0) return h(tag, attrs)
         return h(tag, attrs, children)
       }
     }
