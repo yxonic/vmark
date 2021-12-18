@@ -108,9 +108,9 @@ export default function plugin(option?: VMarkVitePluginOption) {
       const { nodes, frontmatter } = md.render(src)
 
       const importScript = `import { h } from '@vue/runtime-core'`
-      const renderScript = `export function render() {\nreturn [\n${nodes.join(
+      const renderScript = `export default { render() {\nreturn [\n${nodes.join(
         ',\n',
-      )},\n]\n}`
+      )},\n]\n}\n}`
       const frontmatterScript = `export const frontmatter = ${JSON.stringify(
         frontmatter,
       )}`
