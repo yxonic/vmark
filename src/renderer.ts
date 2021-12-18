@@ -279,8 +279,7 @@ export class MarkdownVueRenderer {
           this.renderTokens(token.children),
         )
       } else if (token.hidden) {
-        // TODO: make sure this is appropriate
-        parent.children.push(this.nodeRenderer(token.content))
+        continue
       } else if (token.type === 'html_block') {
         // parse and render as-is, *before* applying custom rules
         const el = parse(token.content)
