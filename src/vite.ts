@@ -116,17 +116,17 @@ export default function plugin(option?: VMarkVitePluginOption) {
       const { nodes, frontmatter } = md.render(src)
 
       const importScript = `import { h } from '@vue/runtime-core'`
-      const renderScript = `export default { render() {\nreturn [\n${nodes.join(
-        ',\n',
-      )},\n]\n}\n}`
+      const dynamicImportScript = `${Array.from(
+        dynamicImportScripts.values(),
+      ).join('\n')}`
+      const nodeScript = `export const nodes = [\n${nodes.join(',\n')},\n]`
+      const renderScript = `export default { render() {\nreturn nodes\n}\n}`
       const frontmatterScript = `export const frontmatter = ${JSON.stringify(
         frontmatter,
       )}`
 
       return {
-        code: `${importScript}\n${Array.from(
-          dynamicImportScripts.values(),
-        ).join('\n')}\n\n${renderScript}\n\n${frontmatterScript}\n`,
+        code: `${importScript}\n${dynamicImportScript}\n\n${nodeScript}\n\n${renderScript}\n\n${frontmatterScript}\n`,
       }
     },
   }
