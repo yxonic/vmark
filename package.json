@@ -27,7 +27,6 @@
     "lint": "eslint --fix --ext .ts,.tsx,.js,.jsx,.vue src test",
     "tc": "tsc --noEmit",
     "prepare": "husky install",
-    "postinstall": "patch-package",
     "prepublishOnly": "npm run test && npm run build && npm run build:defs",
     "postpublish": "rimraf *.d.ts"
   },
