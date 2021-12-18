@@ -105,7 +105,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
           }
 
           if (children.length === 0) {
-            return `h(\n${tag},\n{ ...${JSON.stringify(attrs)}${attrSrc} },\n])`
+            return `h(\n${tag},\n{ ...${JSON.stringify(attrs)}${attrSrc} })`
           }
 
           return `h(\n${tag},\n{ ...${JSON.stringify(
