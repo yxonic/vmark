@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import * as crypto from 'crypto'
 import { camelize, capitalize } from '@vue/shared'
 import { MarkdownVueRenderer } from '.'
 
@@ -10,10 +11,18 @@ interface VMarkVitePluginOption {
   defaultComponentDir?: string
   componentDirResolver?: ComponentDirResolver
 }
+interface ViteConfig {
+  base?: string
+}
 
 export default function plugin(option?: VMarkVitePluginOption) {
+  let config: ViteConfig
   return {
-    name: 'transform-file',
+    name: 'transform-markdown',
+    configResolved(resolvedConfig: ViteConfig) {
+      // store the resolved config
+      config = resolvedConfig
+    },
     transform(src: string, id: string) {
       if (!mdRegex.test(id)) {
         return
@@ -25,10 +34,12 @@ export default function plugin(option?: VMarkVitePluginOption) {
       const componentFileSet = new Set(
         dir === undefined ? [] : fs.readdirSync(dir),
       )
+      const base = config?.base || '/'
 
-      const componentImportScripts = new Set<string>()
+      const dynamicImportScripts = new Set<string>()
 
       const md = MarkdownVueRenderer.fromOptions({
+        html: true,
         nodeRenderer(node) {
           if (typeof node === 'string') return JSON.stringify(node)
 
@@ -39,7 +50,22 @@ export default function plugin(option?: VMarkVitePluginOption) {
             return `[\n${children.join(',\n')},\n]`
           }
 
-          if (tag.startsWith('block') || tag.startsWith('container')) {
+          if (tag === 'a' && attrs.href && attrs.href.startsWith('/')) {
+            // prepend base url
+            attrs.href = base + attrs.href.slice(1)
+          }
+
+          if (tag === 'img' && attrs.src) {
+            const hash = crypto
+              .createHash('md5')
+              .update(attrs.src)
+              .digest('hex')
+            const src = `Image${hash}`
+            dynamicImportScripts.add(`import ${src} from '${attrs.src}'`)
+            attrs.src = src
+          }
+
+          if (tag.startsWith('block_') || tag.startsWith('container_')) {
             const fields = tag.split('_')
             const type = fields[0]
             const name = fields[1]
@@ -57,7 +83,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
 
             if (filename) {
               tag = name
-              componentImportScripts.add(
+              dynamicImportScripts.add(
                 `import ${name} from '${dir}/${filename}.vue'`,
               )
             } else {
@@ -91,7 +117,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
 
       return {
         code: `${importScript}\n${Array.from(
-          componentImportScripts.values(),
+          dynamicImportScripts.values(),
         ).join('\n')}\n\n${renderScript}\n\n${frontmatterScript}\n`,
       }
     },

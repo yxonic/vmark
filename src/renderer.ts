@@ -135,7 +135,7 @@ export class MarkdownVueRenderer {
         if (!tag) {
           return children
         }
-        if (tag.startsWith('block') || tag.startsWith('container')) {
+        if (tag.startsWith('block_') || tag.startsWith('container_')) {
           const fields = tag.split('_')
           const type = fields[0]
           const name = fields[1]
@@ -213,7 +213,7 @@ export class MarkdownVueRenderer {
             nesting = -1
           } else {
             // opening tag
-            const el = parse(token.content)
+            const el = parse(token.content.trim())
             assert(el.childNodes.length === 1)
             const node = el.firstChild as HTMLElement
             if (
@@ -244,7 +244,7 @@ export class MarkdownVueRenderer {
         // nesting level +1
         let tag = token.tag || 'div'
         const attrs = (token.attrs && Object.fromEntries(token.attrs)) ?? {}
-        if (token.type.startsWith('container')) {
+        if (token.type.startsWith('container_')) {
           tag = token.type
           attrs.info = token.info as string
         }
