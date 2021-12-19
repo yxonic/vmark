@@ -1,11 +1,7 @@
 declare module '*.md' {
-  import { ComponentOptions, VNodeArrayChildren } from '@vue/runtime-core'
-  const component: ComponentOptions
+  import { Component, VNodeArrayChildren } from '@vue/runtime-core'
+  const component: Component
   export default component
   export const nodes: VNodeArrayChildren
-  export const frontmatter: string | undefined
-}
-declare module '*.md?raw' {
-  const str: string
-  export default str
+  export const frontmatter: Record<string, unknown> | undefined
 }
