@@ -21,7 +21,7 @@ it('should render custom blocks and containers', async () => {
       h(VMark, {
         src: ':::note {args}\ntest\n:::',
         options: {
-          containerComponents: { note: null },
+          containers: { note: null },
         },
       }),
   })
