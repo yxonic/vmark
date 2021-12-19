@@ -1,18 +1,19 @@
 import * as fs from 'fs'
 import * as crypto from 'crypto'
-import { camelize, capitalize } from '@vue/shared'
+import { camelize, capitalize, hyphenate } from '@vue/shared'
 import { MarkdownVueRenderer } from '.'
 
 const mdRegex = /\.md$/
 
 type ComponentResolver = (
-  id: string,
   name: string,
-  info?: string,
+  id: string,
 ) => string | { name: string; path: string } | null | undefined
 
 interface VMarkVitePluginOption {
+  containers?: string[]
   defaultComponentDir?: string
+  componentDirResolver?: (id: string) => string | null | undefined
   componentResolver?: ComponentResolver | ComponentResolver[]
 }
 interface ViteConfig {
@@ -38,20 +39,30 @@ export default function plugin(option?: VMarkVitePluginOption) {
           : typeof option.componentResolver === 'function'
           ? [option.componentResolver]
           : option.componentResolver
-      const dir = option?.defaultComponentDir
-      const componentFileSet = new Set(
-        dir === undefined ? [] : fs.readdirSync(dir),
-      )
+      const dir =
+        (option?.componentDirResolver && option.componentDirResolver(id)) ||
+        option?.defaultComponentDir
+
+      const componentFileSet = new Set(dir ? fs.readdirSync(dir) : [])
       const base = config?.base || '/'
 
       const dynamicImportScripts = new Set<string>()
 
       const md = MarkdownVueRenderer.fromOptions({
         html: true,
+        containers: Object.fromEntries(
+          (
+            option?.containers ||
+            Array.from(componentFileSet.values()).map((f) =>
+              hyphenate(f.split('.')[0]),
+            ) ||
+            []
+          ).map((c) => [c, null]),
+        ),
         nodeRenderer(node) {
           if (typeof node === 'string') return JSON.stringify(node)
 
-          let tag = node.tag
+          let tag = node.tag as string | null
           const { attrs, children } = node
 
           if (!tag) {
@@ -75,61 +86,54 @@ export default function plugin(option?: VMarkVitePluginOption) {
             attrSrc = `, src: ${src}`
           }
 
-          if (tag.startsWith('block_') || tag.startsWith('container_')) {
-            const fields = tag.split('_')
-            const type = fields[0]
-            const name = fields[1]
-
-            // try resolvers first
-            let resolvedComponent: { name: string; path: string } | undefined
-            for (let i = 0; i < resolvers.length; i++) {
-              const r = resolvers[i](id, name, attrs.info)
-              if (r) {
-                resolvedComponent = {
-                  name:
-                    typeof r === 'string' ? capitalize(camelize(name)) : r.name,
-                  path: typeof r === 'string' ? r : r.path,
-                }
-                break
+          // try custom resolvers
+          let resolvedComponent: { name: string; path: string } | undefined
+          for (let i = 0; i < resolvers.length; i++) {
+            const r = resolvers[i](tag, id)
+            if (r) {
+              resolvedComponent = {
+                name:
+                  typeof r === 'string' ? capitalize(camelize(tag)) : r.name,
+                path: typeof r === 'string' ? r : r.path,
               }
+              break
             }
-            if (resolvedComponent) {
-              tag = resolvedComponent.name
+          }
+
+          if (resolvedComponent) {
+            tag = resolvedComponent.name
+            dynamicImportScripts.add(
+              `import ${tag} from '${resolvedComponent.path}'`,
+            )
+          } else if (tag.startsWith('container_')) {
+            // resolve from dir
+            const name = tag.split('_')[1]
+            let filename
+            if (componentFileSet.has(`${name}.vue`)) {
+              filename = name
+            } else if (componentFileSet.has(`${camelize(name)}.vue`)) {
+              filename = camelize(name)
+            } else if (
+              componentFileSet.has(`${capitalize(camelize(name))}.vue`)
+            ) {
+              filename = capitalize(camelize(name))
+            }
+
+            if (filename) {
+              tag = capitalize(camelize(name))
               dynamicImportScripts.add(
-                `import ${tag} from '${resolvedComponent.path}'`,
+                `import ${tag} from '${dir}/${filename}.vue'`,
               )
             } else {
-              // resolve from dir
-              let filename = undefined
-              if (!filename && componentFileSet.has(`${name}.vue`)) {
-                filename = name
-              }
-              if (!filename && componentFileSet.has(`${camelize(name)}.vue`)) {
-                filename = camelize(name)
-              }
-              if (
-                !filename &&
-                componentFileSet.has(`${capitalize(camelize(name))}.vue`)
-              ) {
-                filename = capitalize(camelize(name))
-              }
-
-              if (filename) {
-                tag = capitalize(camelize(name))
-                dynamicImportScripts.add(
-                  `import ${tag} from '${dir}/${filename}.vue'`,
-                )
+              tag = '"div"'
+              if (attrs.class) {
+                attrs.class = `${attrs.class} container-${name}`
               } else {
-                tag = type === 'block' ? '"span"' : '"div"'
-                if (attrs.class) {
-                  attrs.class = `${attrs.class} ${type}-${name}`
-                } else {
-                  attrs.class = `${type}-${name}`
-                }
-                if (attrs.info) {
-                  attrs['data-info'] = attrs.info
-                  delete attrs.info
-                }
+                attrs.class = `container-${name}`
+              }
+              if (attrs.info) {
+                attrs['data-info'] = attrs.info
+                delete attrs.info
               }
             }
           } else {

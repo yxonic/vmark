@@ -16,27 +16,16 @@ it('should render lists', async () => {
 })
 
 it('should render custom blocks and containers', async () => {
-  let app: App<Element>, html: string
-
-  app = createSSRApp({
-    render: () =>
-      h(VMark, {
-        src: '@[video](test)',
-      }),
-  })
-  html = await renderToString(app)
-  expect(html).toContain('<span class="block-video" data-info="test">')
-
-  app = createSSRApp({
+  const app = createSSRApp({
     render: () =>
       h(VMark, {
         src: ':::note {args}\ntest\n:::',
         options: {
-          containers: ['note'],
+          containerComponents: { note: null },
         },
       }),
   })
-  html = await renderToString(app)
+  const html = await renderToString(app)
   expect(html).toContain('<div class="container-note" data-info="note {args}">')
 })
 

@@ -15,7 +15,6 @@ import Abbr from 'markdown-it-abbr'
 import DefList from 'markdown-it-deflist'
 import Container from 'markdown-it-container'
 import FrontMatter from 'markdown-it-front-matter'
-import CustomBlock from './customBlockPlugin'
 
 // for parsing frontmatter
 import * as yaml from 'yaml'
@@ -29,14 +28,13 @@ import { assert } from './utils'
 export interface MarkdownVueRendererOptions {
   html?: boolean
   base?: string
-  containers?: string[]
-  customComponents?: Record<string, ComponentOptions>
+  containers?: Record<string, ComponentOptions | null>
   customRules?: RenderRules
   nodeRenderer?: NodeRenderer
 }
 
 export interface Node {
-  tag: string | null
+  tag: string | ComponentOptions | null
   attrs: Record<string, string>
   children: VNodeArrayChildren
 }
@@ -127,7 +125,7 @@ export class MarkdownVueRenderer {
     if (options?.nodeRenderer) {
       renderer.nodeRenderer = options.nodeRenderer
     } else {
-      const components = options?.customComponents || {}
+      const components = options?.containers || {}
       renderer.nodeRenderer = (node) => {
         if (typeof node === 'string') return node
         let tag = node.tag
@@ -135,18 +133,17 @@ export class MarkdownVueRenderer {
         if (!tag) {
           return children
         }
-        if (tag.startsWith('block_') || tag.startsWith('container_')) {
-          const fields = tag.split('_')
-          const type = fields[0]
-          const name = fields[1]
-          if (components[name]) {
-            tag = components[name] as never // simplify typing
+        if (typeof tag === 'string' && tag.startsWith('container_')) {
+          const name = tag.split('_')[1]
+          const component = components[name]
+          if (component) {
+            tag = component
           } else {
-            tag = type === 'block' ? 'span' : 'div'
+            tag = 'div'
             if (attrs.class) {
-              attrs.class = `${attrs.class} ${type}-${name}`
+              attrs.class = `${attrs.class} container-${name}`
             } else {
-              attrs.class = `${type}-${name}`
+              attrs.class = `container-${name}`
             }
             if (attrs.info) {
               attrs['data-info'] = attrs.info
@@ -171,16 +168,9 @@ export class MarkdownVueRenderer {
     })
 
     // custom components
-    md.use(CustomBlock)
-    if (options?.containers) {
-      options.containers.forEach((k) => {
-        md.use(Container, k)
-      })
-    } else {
-      Object.keys(options?.customComponents || {}).forEach((k) => {
-        md.use(Container, k)
-      })
-    }
+    Object.keys(options?.containers || {}).forEach((k) => {
+      md.use(Container, k)
+    })
 
     return renderer
   }
@@ -246,7 +236,8 @@ export class MarkdownVueRenderer {
         let tag = token.tag || 'div'
         const attrs = (token.attrs && Object.fromEntries(token.attrs)) ?? {}
         if (token.type.startsWith('container_')) {
-          tag = token.type
+          const name = token.type.split('_')
+          tag = name.slice(0, name.length - 1).join('_')
           attrs.info = token.info as string
         }
         nodeStack.push({ tag, attrs, children: [] })

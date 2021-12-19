@@ -8,33 +8,38 @@ it('should export render function', () => {
   expect(r?.code).toContain('"heading"')
 })
 
-it('should export render custom blocks', () => {
-  const { transform } = plugin()
-  const r = transform('@[video](test)\n', 'test.md')
-  expect(r?.code).toContain(
-    JSON.stringify({ class: 'block-video', 'data-info': 'test' }),
-  )
-})
-
 it('should support component resolver', () => {
   const { transform } = plugin({
+    containers: ['warning'],
     componentResolver: [
-      (_, name, info) => {
-        if (name === 'icon' && info)
+      (name) => {
+        if (name.startsWith('i-')) {
+          const parts = name.split('-').slice(1)
           return {
-            name: `Icon${capitalize(camelize(info.split('/').join('-')))}`,
-            path: `~icons/${info}`,
+            name: `Icon${capitalize(camelize(parts.join('-')))}`,
+            path: `~icons/${parts[0]}/${parts[1]}`,
           }
+        }
       },
-      (id, name) =>
-        id.split('/').slice(0, id.split('/').lastIndexOf('pages')).join('/') +
-        '/components/' +
-        name +
-        '.vue',
+      (name, id) => {
+        if (name.startsWith('container_')) {
+          return {
+            name: capitalize(name.split('_')[1]),
+            path:
+              id
+                .split('/')
+                .slice(0, id.split('/').lastIndexOf('pages'))
+                .join('/') +
+              '/components/' +
+              name.split('_')[1] +
+              '.vue',
+          }
+        }
+      },
     ],
   })
   const r = transform(
-    '@[icon](mi/attachment)\n\n@[warning](test)\n',
+    '<i-mi-attachment />\n\n:::warning\ntext\n:::\n',
     '/path/to/pages/test.md',
   )
   expect(r?.code).toContain(
