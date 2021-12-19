@@ -52,6 +52,7 @@
     "@types/markdown-it-container": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.1.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -68,5 +69,10 @@
     "src/**/*.{ts,tsx,js,jsx,vue}": [
       "eslint --fix --max-warnings=0"
     ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
