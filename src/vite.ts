@@ -5,11 +5,15 @@ import { MarkdownVueRenderer } from '.'
 
 const mdRegex = /\.md$/
 
-type ComponentDirResolver = (id: string) => string
+type ComponentResolver = (
+  id: string,
+  name: string,
+  info?: string,
+) => string | { name: string; path: string } | null | undefined
 
 interface VMarkVitePluginOption {
   defaultComponentDir?: string
-  componentDirResolver?: ComponentDirResolver
+  componentResolver?: ComponentResolver | ComponentResolver[]
 }
 interface ViteConfig {
   base?: string
@@ -28,9 +32,13 @@ export default function plugin(option?: VMarkVitePluginOption) {
         return
       }
 
-      const dir =
-        (option?.componentDirResolver && option.componentDirResolver(id)) ||
-        option?.defaultComponentDir
+      const resolvers =
+        option?.componentResolver === undefined
+          ? []
+          : typeof option.componentResolver === 'function'
+          ? [option.componentResolver]
+          : option.componentResolver
+      const dir = option?.defaultComponentDir
       const componentFileSet = new Set(
         dir === undefined ? [] : fs.readdirSync(dir),
       )
@@ -72,32 +80,56 @@ export default function plugin(option?: VMarkVitePluginOption) {
             const type = fields[0]
             const name = fields[1]
 
-            let filename = undefined
-            if (componentFileSet.has(`${name}.vue`)) {
-              filename = name
+            // try resolvers first
+            let resolvedComponent: { name: string; path: string } | undefined
+            for (let i = 0; i < resolvers.length; i++) {
+              const r = resolvers[i](id, name, attrs.info)
+              if (r) {
+                resolvedComponent = {
+                  name:
+                    typeof r === 'string' ? capitalize(camelize(name)) : r.name,
+                  path: typeof r === 'string' ? r : r.path,
+                }
+                break
+              }
             }
-            if (componentFileSet.has(`${camelize(name)}.vue`)) {
-              filename = camelize(name)
-            }
-            if (componentFileSet.has(`${capitalize(camelize(name))}.vue`)) {
-              filename = capitalize(camelize(name))
-            }
-
-            if (filename) {
-              tag = name
+            if (resolvedComponent) {
+              tag = resolvedComponent.name
               dynamicImportScripts.add(
-                `import ${name} from '${dir}/${filename}.vue'`,
+                `import ${tag} from '${resolvedComponent.path}'`,
               )
             } else {
-              tag = type === 'block' ? '"span"' : '"div"'
-              if (attrs.class) {
-                attrs.class = `${attrs.class} ${type}-${name}`
-              } else {
-                attrs.class = `${type}-${name}`
+              // resolve from dir
+              let filename = undefined
+              if (!filename && componentFileSet.has(`${name}.vue`)) {
+                filename = name
               }
-              if (attrs.info) {
-                attrs['data-info'] = attrs.info
-                delete attrs.info
+              if (!filename && componentFileSet.has(`${camelize(name)}.vue`)) {
+                filename = camelize(name)
+              }
+              if (
+                !filename &&
+                componentFileSet.has(`${capitalize(camelize(name))}.vue`)
+              ) {
+                filename = capitalize(camelize(name))
+              }
+
+              if (filename) {
+                tag = capitalize(camelize(name))
+                dynamicImportScripts.add(
+                  `import ${tag} from '${dir}/${filename}.vue'`,
+                )
+              } else {
+                tag = type === 'block' ? '"span"' : '"div"'
+                if (attrs.class) {
+                  attrs.class = `${attrs.class} ${type}-${name}`
+                } else {
+                  attrs.class = `${type}-${name}`
+                }
+                if (attrs.info) {
+                  attrs['data-info'] = attrs.info
+                  delete attrs.info
+                }
               }
             }
           } else {
