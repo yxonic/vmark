@@ -53,6 +53,7 @@
     "@types/markdown-it-container": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
+    "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.0.1",
     "eslint": "^8.1.0",
     "eslint-config-prettier": "^8.3.0",
@@ -76,6 +77,11 @@
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
   },
   "repository": {
     "type": "git",
