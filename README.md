@@ -19,17 +19,69 @@ import VMark from '@yxonic/vmark'
 </script>
 ```
 
-You can also register VMark as global component. It's up to you.
+### Vite plugin
+
+You can also use VMark to import `.md` files as Vue components. In your `vite.config.js`:
+
+```js
+import vue from '@vitejs/plugin-vue'
+import vmark from '@yxonic/vmark/vite'
+
+export default {
+  plugins: [vue(), vmark()]
+}
+```
+
+### Configuration
+
+VMark:
+```ts
+export interface MarkdownVueRendererOptions {
+  html?: boolean
+  containers?: Record<string, ComponentOptions | null>
+  customRules?: RenderRules
+  nodeRenderer?: NodeRenderer
+}
+
+export interface Node {
+  tag: string | ComponentOptions | null
+  attrs: Record<string, string>
+  children: VNodeArrayChildren
+}
+export type TokenRenderRule = (
+  token: Token,
+  ctx: { nodeRenderer: NodeRenderer },
+) => Node | string | null
+export type RenderRules = Record<string, TokenRenderRule>
+export type NodeRenderer = (node: Node | string) => VNodeChild
+```
+
+Vite plugin:
+```ts
+type ComponentResolver = (
+  name: string,
+  id: string,
+) => string | { name: string; path: string } | null | undefined
+
+interface VMarkVitePluginOption {
+  rewriteBaseUrl?: boolean
+  containers?: string[]
+  defaultComponentDir?: string
+  componentDirResolver?: (id: string) => string | null | undefined
+  componentResolver?: ComponentResolver | ComponentResolver[]
+}
+```
 
 ## TODO
 
-- [ ] Support token renderer customization for each type.
-- [ ] A handy collection of `markdown-it` plugins.
-- [ ] Feature-oriented options for `<v-mark>`.
+- [x] Support token renderer customization for each type.
+- [ ] A handy collection of `markdown-it` plugins (anchor, attrs, KaTeX, etc.).
+- [x] Feature-oriented options for `<v-mark>`.
 - [x] Custom components.
 - [ ] Dynamic options.
 - [x] Vite plugin.
 - [x] Export frontmatter and document structure.
+- [ ] Error display.
 - [ ] Documentation.
 
 ## `markdown-it` Plugins
@@ -39,7 +91,6 @@ You can also register VMark as global component. It's up to you.
 - [ ] [markdown-it-footnote](https://github.com/markdown-it/markdown-it-footnote)*
 - [x] [markdown-it-abbr](https://github.com/markdown-it/markdown-it-abbr)
 - [x] [markdown-it-deflist](https://github.com/markdown-it/markdown-it-deflist)
-- [x] [markdown-it-custom-block](https://github.com/posva/markdown-it-custom-block)*
 - [x] [markdown-it-container](https://github.com/markdown-it/markdown-it-container)*
 - [ ] [markdown-it-task-lists](https://github.com/revin/markdown-it-task-lists)*
 - [x] [markdown-it-front-matter](https://github.com/ParkSB/markdown-it-front-matter)
@@ -52,5 +103,5 @@ You can also register VMark as global component. It's up to you.
 
 ### Manual
 
-- [ ] Link rewrite
+- [x] Link rewrite
 - [ ] KaTeX

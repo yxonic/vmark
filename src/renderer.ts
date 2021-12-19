@@ -27,7 +27,6 @@ import { assert } from './utils'
 
 export interface MarkdownVueRendererOptions {
   html?: boolean
-  base?: string
   containers?: Record<string, ComponentOptions | null>
   customRules?: RenderRules
   nodeRenderer?: NodeRenderer

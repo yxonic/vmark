@@ -11,11 +11,13 @@ type ComponentResolver = (
 ) => string | { name: string; path: string } | null | undefined
 
 interface VMarkVitePluginOption {
+  rewriteBaseUrl?: boolean
   containers?: string[]
   defaultComponentDir?: string
   componentDirResolver?: (id: string) => string | null | undefined
   componentResolver?: ComponentResolver | ComponentResolver[]
 }
+
 interface ViteConfig {
   base?: string
 }
@@ -69,7 +71,12 @@ export default function plugin(option?: VMarkVitePluginOption) {
             return `[\n${children.join(',\n')},\n]`
           }
 
-          if (tag === 'a' && attrs.href && attrs.href.startsWith('/')) {
+          if (
+            tag === 'a' &&
+            option?.rewriteBaseUrl !== false &&
+            attrs.href &&
+            attrs.href.startsWith('/')
+          ) {
             // prepend base url
             attrs.href = base + attrs.href.slice(1)
           }
