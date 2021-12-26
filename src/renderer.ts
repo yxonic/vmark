@@ -80,7 +80,7 @@ export function defaultNodeRenderer(node: Node | string) {
   return h(tag, attrs, children)
 }
 
-const htmlTagRegex = /^\s*<\/?([a-zA-Z]+)([^>]*)>\s*$/
+const htmlTagRegex = /^\s*<\/?([a-zA-Z0-9-]+)([^>]*)>\s*$/
 // http://xahlee.info/js/html5_non-closing_tag.html
 const selfClosingTags = new Set([
   'area',
