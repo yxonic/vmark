@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import { camelize, capitalize, hyphenate } from '@vue/shared'
 import { MarkdownVueRenderer } from '.'
+import { RenderRules } from './renderer'
 
 const mdRegex = /\.md$/
 
@@ -12,6 +13,7 @@ type ComponentResolver = (
 
 interface VMarkVitePluginOption {
   rewriteBaseUrl?: boolean
+  customRules?: RenderRules
   containers?: string[]
   defaultComponentDir?: string
   componentDirResolver?: (id: string) => string | null | undefined
@@ -52,6 +54,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
 
       const md = MarkdownVueRenderer.fromOptions({
         html: true,
+        customRules: option?.customRules,
         containers: Object.fromEntries(
           (
             option?.containers ||
