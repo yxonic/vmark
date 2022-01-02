@@ -85,7 +85,7 @@ export default function plugin(option?: VMarkVitePluginOption) {
           }
 
           let attrSrc = ''
-          if (tag === 'img' && attrs.src) {
+          if (tag === 'img' && attrs.src && !attrs.src.startsWith('http')) {
             const hash = crypto
               .createHash('md5')
               .update(attrs.src)
