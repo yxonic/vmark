@@ -26,7 +26,7 @@ interface ViteConfig {
 }
 
 export default function plugin(option?: VMarkVitePluginOption): Plugin {
-  let config: ViteConfig
+  let config: ViteConfig | undefined
   return {
     name: 'vmark',
     configResolved(resolvedConfig: ViteConfig) {
@@ -38,7 +38,7 @@ export default function plugin(option?: VMarkVitePluginOption): Plugin {
         return
       }
       try {
-        return render(src, id, config.base || '/', option)
+        return render(src, id, config?.base || '/', option)
       } catch (e) {
         this.error(e as never)
       }
@@ -48,7 +48,12 @@ export default function plugin(option?: VMarkVitePluginOption): Plugin {
 
       const defaultRead = ctx.read
       ctx.read = async function () {
-        return render(ctx.file, await defaultRead(), config.base || '/', option)
+        return render(
+          ctx.file,
+          await defaultRead(),
+          config?.base || '/',
+          option,
+        )
       }
     },
   }

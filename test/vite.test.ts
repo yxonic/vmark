@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { camelize, capitalize } from '@vue/runtime-core'
 import plugin from '../src/vite'
 
 it('should export render function', () => {
-  const { transform } = plugin()
+  const { transform } = plugin() as any
   const r = transform('# heading\n', 'test.md')
-  expect(r?.code).toContain('h1')
-  expect(r?.code).toContain('"heading"')
+  expect(r).toContain('h1')
+  expect(r).toContain('"heading"')
 })
 
 it('should support component resolver', () => {
@@ -37,21 +38,17 @@ it('should support component resolver', () => {
         }
       },
     ],
-  })
+  }) as any
   const r = transform(
     '<i-mi-attachment />\n\n:::warning\ntext\n:::\n',
     '/path/to/pages/test.md',
   )
-  expect(r?.code).toContain(
-    "import IconMiAttachment from '~icons/mi/attachment'",
-  )
-  expect(r?.code).toContain(
-    "import Warning from '/path/to/components/warning.vue'",
-  )
+  expect(r).toContain("import IconMiAttachment from '~icons/mi/attachment'")
+  expect(r).toContain("import Warning from '/path/to/components/warning.vue'")
 })
 
 it('should export frontmatter', () => {
-  const { transform } = plugin()
+  const { transform } = plugin() as any
   const r = transform('---\ntitle: test\n---\n\n# heading\n', 'test.md')
-  expect(r?.code).toContain('export const frontmatter = {"title":"test"}')
+  expect(r).toContain('export const frontmatter = {"title":"test"}')
 })
