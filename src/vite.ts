@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as crypto from 'crypto'
+import { Plugin } from 'vite'
 import { camelize, capitalize, hyphenate } from '@vue/shared'
 import { MarkdownVueRenderer } from '.'
 import { RenderRules } from './renderer'
@@ -24,7 +25,7 @@ interface ViteConfig {
   base?: string
 }
 
-export default function plugin(option?: VMarkVitePluginOption) {
+export default function plugin(option?: VMarkVitePluginOption): Plugin {
   let config: ViteConfig
   return {
     name: 'vmark',
@@ -36,15 +37,18 @@ export default function plugin(option?: VMarkVitePluginOption) {
       if (!mdRegex.test(id)) {
         return
       }
-      return render(src, id, option, config)
+      try {
+        return render(src, id, config.base || '/', option)
+      } catch (e) {
+        this.error(e as never)
+      }
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleHotUpdate(ctx: any) {
+    async handleHotUpdate(ctx) {
       if (!mdRegex.test(ctx.file)) return
 
       const defaultRead = ctx.read
       ctx.read = async function () {
-        return render(ctx.file, await defaultRead(), option, config)
+        return render(ctx.file, await defaultRead(), config.base || '/', option)
       }
     },
   }
@@ -53,8 +57,8 @@ export default function plugin(option?: VMarkVitePluginOption) {
 function render(
   src: string,
   id: string,
+  base: string,
   option: VMarkVitePluginOption | undefined,
-  config: ViteConfig,
 ) {
   const resolvers =
     option?.componentResolver === undefined
@@ -67,7 +71,6 @@ function render(
     option?.defaultComponentDir
 
   const componentFileSet = new Set(dir ? fs.readdirSync(dir) : [])
-  const base = config?.base || '/'
 
   const dynamicImportScripts = new Set<string>()
 
@@ -184,7 +187,5 @@ function render(
     frontmatter,
   )}`
 
-  return {
-    code: `${importScript}\n${dynamicImportScript}\n\n${nodeScript}\n\n${renderScript}\n\n${frontmatterScript}\n`,
-  }
+  return `${importScript}\n${dynamicImportScript}\n\n${nodeScript}\n\n${renderScript}\n\n${frontmatterScript}\n`
 }
