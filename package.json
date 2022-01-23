@@ -48,6 +48,8 @@
     "vite": "^2.0.0"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/git": "^10.0.1",
     "@types/jest": "^27.0.3",
     "@types/markdown-it": "^12.2.3",
     "@types/markdown-it-container": "^2.0.4",
@@ -82,6 +84,13 @@
   "release": {
     "branches": [
       "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      "@semantic-release/npm",
+      "@semantic-release/git"
     ]
   },
   "repository": {
