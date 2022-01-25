@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as crypto from 'crypto'
-import { Plugin } from 'vite'
+import hash from 'hash-sum'
+import { Plugin, ResolvedConfig } from 'vite'
 import { camelize, capitalize, hyphenate } from '@vue/shared'
 import { MarkdownVueRenderer } from '.'
 import { RenderRules } from './renderer'
@@ -21,45 +22,40 @@ interface VMarkVitePluginOption {
   componentResolver?: ComponentResolver | ComponentResolver[]
 }
 
-interface ViteConfig {
-  base?: string
-}
-
 export default function plugin(option?: VMarkVitePluginOption): Plugin {
-  let config: ViteConfig | undefined
+  let config: ResolvedConfig | undefined
   return {
     name: 'vmark',
-    configResolved(resolvedConfig: ViteConfig) {
+    configResolved(resolvedConfig) {
       // store the resolved config
       config = resolvedConfig
     },
-    transform(src: string, id: string) {
+    transform(src, id, opt) {
       if (!mdRegex.test(id)) {
         return
       }
       try {
-        return render(src, id, config?.base || '/', option)
+        let code = transformMarkdown(src, id, config?.base || '/', option)
+        if (config?.isProduction || opt?.ssr) {
+          return code + `\nexport default { render() { return nodes } }`
+        }
+
+        // handle hmr
+        code += `\nconst _default = { render() { return nodes } }`
+        code += `\n_default.__hmrId = '${hash(id)}'`
+        code += `\n_default.__file = '${id}'`
+        code += `\n__VUE_HMR_RUNTIME__.createRecord(_default.__hmrId, _default)`
+        code += `\nimport.meta.hot.accept(({ default: _default }) => { __VUE_HMR_RUNTIME__.rerender(_default.__hmrId, _default.render) })`
+        code += `\nexport default _default`
+        return code
       } catch (e) {
         this.error(e as never)
-      }
-    },
-    async handleHotUpdate(ctx) {
-      if (!mdRegex.test(ctx.file)) return
-
-      const defaultRead = ctx.read
-      ctx.read = async function () {
-        return render(
-          ctx.file,
-          await defaultRead(),
-          config?.base || '/',
-          option,
-        )
       }
     },
   }
 }
 
-function render(
+function transformMarkdown(
   src: string,
   id: string,
   base: string,
@@ -172,25 +168,21 @@ function render(
       }
 
       if (children.length === 0) {
-        return `h(\n${tag},\n{ ...${JSON.stringify(attrs)}${attrSrc} })`
+        return `h(${tag}, { ...${JSON.stringify(attrs)}${attrSrc} })`
       }
 
-      return `h(\n${tag},\n{ ...${JSON.stringify(
+      return `h(${tag}, { ...${JSON.stringify(
         attrs,
-      )}${attrSrc} },\n[\n${children.join(',\n')},\n])`
+      )}${attrSrc} }, [${children.join(', ')}])`
     },
   })
   const { nodes, frontmatter } = md.render(src)
 
-  const importScript = `import { h } from '@vue/runtime-core'`
-  const dynamicImportScript = `${Array.from(dynamicImportScripts.values()).join(
-    '\n',
-  )}`
-  const nodeScript = `export const nodes = [\n${nodes.join(',\n')},\n]`
-  const renderScript = `export default { render() {\nreturn nodes\n}\n}`
-  const frontmatterScript = `export const frontmatter = ${JSON.stringify(
-    frontmatter,
-  )}`
+  let code = ''
+  code += `import { h } from '@vue/runtime-core'`
+  code += `\n${Array.from(dynamicImportScripts.values()).join('\n')}`
+  code += `\nexport const nodes = [${nodes.join(', ')}]`
+  code += `\nexport const frontmatter = ${JSON.stringify(frontmatter)}`
 
-  return `${importScript}\n${dynamicImportScript}\n\n${nodeScript}\n\n${renderScript}\n\n${frontmatterScript}\n`
+  return code
 }
