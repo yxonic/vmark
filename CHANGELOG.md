@@ -1,3 +1,10 @@
+## [0.2.10](https://github.com/yxonic/vmark/compare/v0.2.9...v0.2.10) (2022-01-26)
+
+
+### Bug Fixes
+
+* **vite:** use vue in vite plugin ([d6cb1e2](https://github.com/yxonic/vmark/commit/d6cb1e2bc7e5f1b865365f561d14dd9527bf006a))
+
 ## [0.2.9](https://github.com/yxonic/vmark/compare/v0.2.8...v0.2.9) (2022-01-25)
 
 
