@@ -179,7 +179,7 @@ function transformMarkdown(
   const { nodes, frontmatter } = md.render(src)
 
   let code = ''
-  code += `import { h } from '@vue/runtime-core'`
+  code += `import { h } from 'vue'`
   code += `\n${Array.from(dynamicImportScripts.values()).join('\n')}`
   code += `\nexport const nodes = [${nodes.join(', ')}]`
   code += `\nexport const frontmatter = ${JSON.stringify(frontmatter)}`
